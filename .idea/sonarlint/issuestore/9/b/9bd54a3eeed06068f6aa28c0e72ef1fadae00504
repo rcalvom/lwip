@@ -1,0 +1,27 @@
+
+N	cpp:S1135z"4Complete the task associated to this "todo" comment.(åØÏØüÿÿÿÿ
+N	cpp:S5028À"8Replace this macro by "const", "constexpr" or an "enum".(ºö³†
+N	cpp:S5028Ï"8Replace this macro by "const", "constexpr" or an "enum".(øíü
+S	cpp:S5028ü"8Replace this macro by "const", "constexpr" or an "enum".(ï§‰ûÿÿÿÿ
+S	cpp:S5028ı"8Replace this macro by "const", "constexpr" or an "enum".(à–Ğäùÿÿÿÿ
+N	cpp:S5028ş"8Replace this macro by "const", "constexpr" or an "enum".(íç±³
+S	cpp:S5028ÿ"8Replace this macro by "const", "constexpr" or an "enum".(ÆÚã…üÿÿÿÿ
+S	cpp:S5028€"8Replace this macro by "const", "constexpr" or an "enum".(àİÑ€üÿÿÿÿ
+N	cpp:S5028"8Replace this macro by "const", "constexpr" or an "enum".(·›ÄÁ
+N	cpp:S5028‚"8Replace this macro by "const", "constexpr" or an "enum".(«ïÈ¹
+S	cpp:S5028ƒ"8Replace this macro by "const", "constexpr" or an "enum".(÷ïª–şÿÿÿÿ
+N	cpp:S5028ˆ"8Replace this macro by "const", "constexpr" or an "enum".(Ì§œ©
+S	cpp:S5028"8Replace this macro by "const", "constexpr" or an "enum".(œ¯Ğ€üÿÿÿÿ
+U	cpp:S5416F";"using" should be preferred to "typedef" for type aliasing.(ÑšßÀıÿÿÿÿ
+U	cpp:S5416R";"using" should be preferred to "typedef" for type aliasing.(Öâæšşÿÿÿÿ
+P	cpp:S5416`";"using" should be preferred to "typedef" for type aliasing.(ƒû³µ
+P	cpp:S5416l";"using" should be preferred to "typedef" for type aliasing.(¿¬ßî
+P	cpp:S5416x";"using" should be preferred to "typedef" for type aliasing.(ÈËÍ
+V	cpp:S5416†";"using" should be preferred to "typedef" for type aliasing.(Îé‹Öûÿÿÿÿ
+V	cpp:S5416­";"using" should be preferred to "typedef" for type aliasing.(÷ñÓÈøÿÿÿÿ
+V	cpp:S5416¶";"using" should be preferred to "typedef" for type aliasing.(ÂãÁøÿÿÿÿ
+Q	cpp:S5416Î";"using" should be preferred to "typedef" for type aliasing.(é¢Éî
+F	cpp:S1659–"0Define each identifier in a dedicated statement.(îÌê
+K	cpp:S1659®"0Define each identifier in a dedicated statement.(«ÄÕùÿÿÿÿ
+F	cpp:S1659À"0Define each identifier in a dedicated statement.(†Ï²Ç
+y	cpp:S1820ò"^Refactor this structure so it has no more than 20 fields, rather than the 59 it currently has.(êï¿÷üÿÿÿÿ

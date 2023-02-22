@@ -1,0 +1,25 @@
+
+I	cpp:S1135K"4Complete the task associated to this "todo" comment.(¢¦µ¨
+R	cpp:S5028N"8Replace this macro by "const", "constexpr" or an "enum".(ÑÁêüÿÿÿÿ
+M	cpp:S5028P"8Replace this macro by "const", "constexpr" or an "enum".(µõÏ½
+R	cpp:S5028w"8Replace this macro by "const", "constexpr" or an "enum".(ÍÆĞ¢øÿÿÿÿ
+M	cpp:S5028z"8Replace this macro by "const", "constexpr" or an "enum".(ëÅ×î
+R	cpp:S5028}"8Replace this macro by "const", "constexpr" or an "enum".(ŠÀòÔıÿÿÿÿ
+S	cpp:S5028"8Replace this macro by "const", "constexpr" or an "enum".(ıí¿üÿÿÿÿ
+N	cpp:S5028ƒ"8Replace this macro by "const", "constexpr" or an "enum".(Òå–½
+N	cpp:S5028…"8Replace this macro by "const", "constexpr" or an "enum".(î®ÕÁ
+S	cpp:S5028†"8Replace this macro by "const", "constexpr" or an "enum".(ù¤óøıÿÿÿÿ
+N	cpp:S5028‡"8Replace this macro by "const", "constexpr" or an "enum".(¤•äğ
+N	cpp:S5028‰"8Replace this macro by "const", "constexpr" or an "enum".(ğÈî
+N	cpp:S5028¬"8Replace this macro by "const", "constexpr" or an "enum".(ˆÂ–
+N	cpp:S5028¯"8Replace this macro by "const", "constexpr" or an "enum".(®¦û
+N	cpp:S5028±"8Replace this macro by "const", "constexpr" or an "enum".(ÍÚú¬
+S	cpp:S5028³"8Replace this macro by "const", "constexpr" or an "enum".(ÙÙÃãûÿÿÿÿ
+N	cpp:S5028µ"8Replace this macro by "const", "constexpr" or an "enum".(“ˆˆ˜
+N	cpp:S5028·"8Replace this macro by "const", "constexpr" or an "enum".(¼ËäŒ
+N	cpp:S5028ÿ"8Replace this macro by "const", "constexpr" or an "enum".(ù£‘ê
+;	cpp:S3642Y"&Replace this "enum" with "enum class".(Ù»€ö
+P	cpp:S5416Y";"using" should be preferred to "typedef" for type aliasing.(Ù»€ö
+<	cpp:S3642‘"&Replace this "enum" with "enum class".(Ù»€ö
+Q	cpp:S5416‘";"using" should be preferred to "typedef" for type aliasing.(Ù»€ö
+V	cpp:S5416ò";"using" should be preferred to "typedef" for type aliasing.(¯Ø×Üúÿÿÿÿ

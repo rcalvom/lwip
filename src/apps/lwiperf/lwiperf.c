@@ -776,20 +776,20 @@ void* lwiperf_start_tcp_client(const ip_addr_t* remote_addr, u16_t remote_port,
     break;
   case LWIPERF_DUAL:
     /* Do a bidirectional test simultaneously */
-    settings.flags = htonl(LWIPERF_FLAGS_ANSWER_TEST | LWIPERF_FLAGS_ANSWER_NOW);
+    settings.flags = lwip_htonl(LWIPERF_FLAGS_ANSWER_TEST | LWIPERF_FLAGS_ANSWER_NOW);
     break;
   case LWIPERF_TRADEOFF:
     /* Do a bidirectional test individually */
-    settings.flags = htonl(LWIPERF_FLAGS_ANSWER_TEST);
+    settings.flags = lwip_htonl(LWIPERF_FLAGS_ANSWER_TEST);
     break;
   default:
     /* invalid argument */
     return NULL;
   }
-  settings.num_threads = htonl(1);
-  settings.remote_port = htonl(LWIPERF_TCP_PORT_DEFAULT);
+  settings.num_threads = lwip_htonl(1);
+  settings.remote_port = lwip_htonl(LWIPERF_TCP_PORT_DEFAULT);
   /* TODO: implement passing duration/amount of bytes to transfer */
-  settings.amount = htonl((u32_t)-1000);
+  settings.amount = lwip_htonl((u32_t)-1000);
 
   ret = lwiperf_tx_start_impl(remote_addr, remote_port, &settings, report_fn, report_arg, NULL, &state);
   if (ret == ERR_OK) {

@@ -559,7 +559,7 @@ apps_init(void)
 #if LWIP_NETCONN && defined(LWIP_TCPECHO_APP_NETCONN)
   tcpecho_init();
 #else /* LWIP_NETCONN && defined(LWIP_TCPECHO_APP_NETCONN) */
-  tcpecho_raw_init();
+  tcp_server_init();
 #endif
 #endif /* LWIP_TCPECHO_APP && LWIP_NETCONN */
 #if LWIP_UDPECHO_APP && LWIP_NETCONN

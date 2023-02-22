@@ -30,6 +30,22 @@
 #ifndef LWIP_TCPECHO_RAW_H
 #define LWIP_TCPECHO_RAW_H
 
-void tcpecho_raw_init(void);
+#include "lwip/tcp.h"
+
+enum tcp_states {
+    ES_NONE = 0,
+    ES_ACCEPTED,
+    ES_RECEIVED,
+    ES_CLOSING
+};
+
+struct tcp_raw_state {
+    unsigned char state;
+    unsigned char retries;
+    struct tcp_pcb *pcb;
+    struct pbuf *p;
+};
+
+void tcp_server_init(void);
 
 #endif /* LWIP_TCPECHO_RAW_H */
