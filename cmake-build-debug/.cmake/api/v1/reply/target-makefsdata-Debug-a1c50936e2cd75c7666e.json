@@ -1,0 +1,232 @@
+{
+	"artifacts" : 
+	[
+		{
+			"path" : "contrib/ports/unix/example_app/makefsdata"
+		}
+	],
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_executable",
+			"target_compile_options",
+			"target_include_directories"
+		],
+		"files" : 
+		[
+			"contrib/ports/unix/example_app/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 24,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 25,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 26,
+				"parent" : 0
+			}
+		]
+	},
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : "-g -fdiagnostics-color=always"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Og"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-g"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wall"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-pedantic"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Werror"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wparentheses"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wsequence-point"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wswitch-default"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wextra"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wundef"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wshadow"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wpointer-arith"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wcast-qual"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wwrite-strings"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wold-style-definition"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wcast-align"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wmissing-prototypes"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wnested-externs"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wunreachable-code"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wuninitialized"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Waggregate-return"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wlogical-not-parentheses"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wredundant-decls"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wc++-compat"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wlogical-op"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wtrampolines"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-Wc90-c99-compat"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 3,
+					"path" : "/home/ricardo/Documents/Purdue/app/lwip/src/include"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/ricardo/Documents/Purdue/app/lwip/contrib"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/ricardo/Documents/Purdue/app/lwip/contrib/ports/unix/port/include"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/ricardo/Documents/Purdue/app/lwip/contrib/examples/example_app"
+				}
+			],
+			"language" : "C",
+			"sourceIndexes" : 
+			[
+				0
+			]
+		}
+	],
+	"id" : "makefsdata::@1dbeb22f62ed92dcafe5",
+	"link" : 
+	{
+		"commandFragments" : 
+		[
+			{
+				"fragment" : "-g",
+				"role" : "flags"
+			},
+			{
+				"fragment" : "",
+				"role" : "flags"
+			}
+		],
+		"language" : "C"
+	},
+	"name" : "makefsdata",
+	"nameOnDisk" : "makefsdata",
+	"paths" : 
+	{
+		"build" : "contrib/ports/unix/example_app",
+		"source" : "contrib/ports/unix/example_app"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				0
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/apps/http/makefsdata/makefsdata.c",
+			"sourceGroupIndex" : 0
+		}
+	],
+	"type" : "EXECUTABLE"
+}
