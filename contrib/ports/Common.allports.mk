@@ -40,7 +40,7 @@ CFLAGS+=-g -DLWIP_DEBUG -Wall -pedantic -Werror \
 	-Wmissing-prototypes -Wnested-externs \
 	-Wunreachable-code -Wuninitialized -Wmissing-prototypes \
 	-Wredundant-decls -Waggregate-return -Wlogical-not-parentheses
-	-lPcap++ -lPacket++ -lCommon++ -lpcap
+	-ldbus-1 -lPcap++ -lPacket++ -lCommon++ -lpcap
 #	-Wconversion -Wsign-compare -Wmissing-include-dirs
 
 ifeq (,$(findstring clang,$(CC)))
@@ -49,7 +49,7 @@ CFLAGS+= -Wlogical-op -Wc90-c99-compat -Wtrampolines
 #CFLAGS:=$(CFLAGS) -fsanitize=address -fstack-protector -fstack-check -fsanitize=undefined -fno-sanitize=alignment
 else
 # we cannot sanitize alignment on x86-64 targets because clang wants 64 bit alignment
-CFLAGS+= -fsanitize=address -fsanitize=undefined -fno-sanitize=alignment -Wdocumentation -Wno-documentation-deprecated-sync -lpcap -pcap
+CFLAGS+= -fsanitize=address -fsanitize=undefined -fno-sanitize=alignment -Wdocumentation -Wno-documentation-deprecated-sync -ldbus-1 -lPcap++ -lPacket++ -lCommon++ -lpcap
 endif
 
 CONTRIBDIR?=../../..
@@ -59,7 +59,7 @@ ARFLAGS?=rs
 #default assumes it's a dir above the contrib module
 LWIPDIR?=$(CONTRIBDIR)/..
 
-CFLAGS+=-I. -lpcap -pcap\
+CFLAGS+=-I. -ldbus-1 -lPcap++ -lPacket++ -lCommon++ -lpcap\
 	-I$(CONTRIBDIR) \
 	-I$(LWIPDIR)/include \
 	-I$(LWIPARCH)/include

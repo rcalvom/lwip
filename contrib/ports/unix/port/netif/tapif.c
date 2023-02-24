@@ -262,8 +262,8 @@ static int prvOpenInterface(const char * pucName){
     if(pucName != NULL) {
         (void) strncpy(pucInterfaceName, pucName, sizeof(pucInterfaceName));
         pucInterfaceName[sizeof(pucInterfaceName) - (size_t) 1] = '\0';
-        printf("opening interface %s\n", pucInterfaceName);
-        pxOpenedInterfaceHandle = pcap_create( pucInterfaceName, errbuf);
+        printf("opening interface %s \n", pucInterfaceName);
+        pxOpenedInterfaceHandle = pcap_create(pucInterfaceName, errbuf);
         if(pxOpenedInterfaceHandle != NULL) {
             ret = prvSetDeviceModes();
             if(ret == 1) {
@@ -294,8 +294,8 @@ static int prvOpenInterface(const char * pucName){
  */
 static int prvOpenSelectedNetworkInterface(pcap_if_t * pxAllNetworkInterfaces){
     int ret = 0;
-    printf("%p", (void *)pxAllNetworkInterfaces);
-    if(prvOpenInterface("tun0") == 1) {
+    printf("Print pointer of allNetwork Interfaces %p: \n", (void *)pxAllNetworkInterfaces);
+    if(prvOpenInterface("tap0") == 1) {
         printf( "Successfully opened interface tun0.\n");
         ret = 1;
     } else {
@@ -363,7 +363,7 @@ static int prvCreateWorkerThreads(void) {
 static err_t tun_init(struct netif* netif){
     long ret = 0;
     pcap_if_t *pxAllNetworkInterfaces;
-    printf("%p\n", (void *)netif);
+    printf("Print netif pointer: %p\n", (void *)netif);
     uip_buf = (u_char *) malloc(1024); /*TODO: free this allocated memory*/
     uip_len = 0;
     pxAllNetworkInterfaces = prvGetAvailableNetworkInterfaces();

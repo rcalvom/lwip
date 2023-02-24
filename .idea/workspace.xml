@@ -19,16 +19,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="da13d00d-5d49-44e8-a010-ddfd49f11d8e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/contrib/ports/unix/port/netif/tapif.old.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/contrib/ports/Common.allports.mk" beforeDir="false" afterPath="$PROJECT_DIR$/contrib/ports/Common.allports.mk" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/contrib/ports/unix/Common.mk" beforeDir="false" afterPath="$PROJECT_DIR$/contrib/ports/unix/Common.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/contrib/ports/unix/port/netif/sio.c" beforeDir="false" afterPath="$PROJECT_DIR$/contrib/ports/unix/port/netif/sio.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/contrib/ports/unix/Filelists.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/contrib/ports/unix/Filelists.cmake" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/contrib/ports/unix/check/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/contrib/ports/unix/check/CMakeLists.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/contrib/ports/unix/lib/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/contrib/ports/unix/lib/CMakeLists.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/contrib/ports/unix/port/netif/tapif.c" beforeDir="false" afterPath="$PROJECT_DIR$/contrib/ports/unix/port/netif/tapif.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/apps/lwiperf/lwiperf.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/apps/lwiperf/lwiperf.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/include/lwip/def.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/include/lwip/def.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/include/lwip/ip6_addr.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/include/lwip/ip6_addr.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/netif/ppp/demand.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/netif/ppp/demand.c" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
