@@ -42,10 +42,10 @@ ARCHFILES=$(LWIPARCH)/perf.c \
 UNIX_COMMON_MK_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 include $(UNIX_COMMON_MK_DIR)../Common.allports.mk
 
-LDFLAGS+=-lutil
+LDFLAGS+=-lutil -lPcap++ -lPacket++ -lCommon++ -lpcap
 
 UNAME_S:= $(shell uname -s)
 ifneq ($(UNAME_S),Darwin)
 # Darwin doesn't have pthreads or POSIX real-time extensions libs
-LDFLAGS+=-pthread -lrt
+LDFLAGS+=-pthread -lrt -lPcap++ -lPacket++ -lCommon++ -lpcap
 endif
