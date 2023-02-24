@@ -1318,6 +1318,30 @@
 			"value" : "DOXYGEN_EXECUTABLE-NOTFOUND"
 		},
 		{
+			"name" : "LIBDBUS-1",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Path to a library."
+				}
+			],
+			"type" : "FILEPATH",
+			"value" : "/usr/lib/x86_64-linux-gnu/libdbus-1.so"
+		},
+		{
+			"name" : "LIBPCAP",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Path to a library."
+				}
+			],
+			"type" : "FILEPATH",
+			"value" : "/usr/lib/x86_64-linux-gnu/libpcap.so"
+		},
+		{
 			"name" : "LIBPTHREAD",
 			"properties" : 
 			[
@@ -1411,7 +1435,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "general;/usr/lib/x86_64-linux-gnu/libutil.a;general;/usr/lib/x86_64-linux-gnu/libpthread.a;general;/usr/lib/x86_64-linux-gnu/librt.a;"
+			"value" : "general;/usr/lib/x86_64-linux-gnu/libdbus-1.so;general;/usr/lib/x86_64-linux-gnu/libpcap.so;general;/usr/lib/x86_64-linux-gnu/libutil.a;general;/usr/lib/x86_64-linux-gnu/libpthread.a;general;/usr/lib/x86_64-linux-gnu/librt.a;"
 		}
 	],
 	"kind" : "cache",

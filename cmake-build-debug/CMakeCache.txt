@@ -249,6 +249,12 @@ DOXYGEN_DOT_EXECUTABLE:FILEPATH=DOXYGEN_DOT_EXECUTABLE-NOTFOUND
 DOXYGEN_EXECUTABLE:FILEPATH=DOXYGEN_EXECUTABLE-NOTFOUND
 
 //Path to a library.
+LIBDBUS-1:FILEPATH=/usr/lib/x86_64-linux-gnu/libdbus-1.so
+
+//Path to a library.
+LIBPCAP:FILEPATH=/usr/lib/x86_64-linux-gnu/libpcap.so
+
+//Path to a library.
 LIBPTHREAD:FILEPATH=/usr/lib/x86_64-linux-gnu/libpthread.a
 
 //Path to a library.
@@ -267,7 +273,7 @@ lwIP_IS_TOP_LEVEL:STATIC=ON
 lwIP_SOURCE_DIR:STATIC=/home/ricardo/Documents/Purdue/app/lwip
 
 //Dependencies for the target
-lwipcontribportunix_LIB_DEPENDS:STATIC=general;/usr/lib/x86_64-linux-gnu/libutil.a;general;/usr/lib/x86_64-linux-gnu/libpthread.a;general;/usr/lib/x86_64-linux-gnu/librt.a;
+lwipcontribportunix_LIB_DEPENDS:STATIC=general;/usr/lib/x86_64-linux-gnu/libdbus-1.so;general;/usr/lib/x86_64-linux-gnu/libpcap.so;general;/usr/lib/x86_64-linux-gnu/libutil.a;general;/usr/lib/x86_64-linux-gnu/libpthread.a;general;/usr/lib/x86_64-linux-gnu/librt.a;
 
 
 ########################

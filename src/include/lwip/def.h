@@ -116,10 +116,10 @@ u32_t lwip_htonl(u32_t x);
 
 /* Provide usual function names as macros for users, but this can be turned off */
 #ifndef LWIP_DONT_PROVIDE_BYTEORDER_FUNCTIONS
-/*#define htons(x) lwip_htons(x)*/
-/*#define ntohs(x) lwip_ntohs(x)*/
-/*#define htonl(x) lwip_htonl(x)*/
-/*#define ntohl(x) lwip_ntohl(x)*/
+#define l_htons(x) lwip_htons(x)
+#define l_ntohs(x) lwip_ntohs(x)
+#define l_htonl(x) lwip_htonl(x)
+#define l_ntohl(x) lwip_ntohl(x)
 #endif
 
 /* Functions that are not available as standard implementations.

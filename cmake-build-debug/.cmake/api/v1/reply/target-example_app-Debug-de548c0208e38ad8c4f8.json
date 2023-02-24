@@ -52,7 +52,7 @@
 			{
 				"command" : 1,
 				"file" : 1,
-				"line" : 37,
+				"line" : 39,
 				"parent" : 4
 			},
 			{
@@ -230,6 +230,22 @@
 	[
 		{
 			"backtrace" : 2,
+			"id" : "lwipcore::@1dbeb22f62ed92dcafe5"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "lwipcontribportunix::@1dbeb22f62ed92dcafe5"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "lwipallapps::@1dbeb22f62ed92dcafe5"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "lwipcontribapps::@1dbeb22f62ed92dcafe5"
+		},
+		{
+			"backtrace" : 2,
 			"id" : "lwipmbedtls::@1dbeb22f62ed92dcafe5"
 		},
 		{
@@ -238,23 +254,7 @@
 		},
 		{
 			"backtrace" : 2,
-			"id" : "lwipcontribapps::@1dbeb22f62ed92dcafe5"
-		},
-		{
-			"backtrace" : 2,
 			"id" : "lwipcontribaddons::@1dbeb22f62ed92dcafe5"
-		},
-		{
-			"backtrace" : 2,
-			"id" : "lwipcontribportunix::@1dbeb22f62ed92dcafe5"
-		},
-		{
-			"backtrace" : 2,
-			"id" : "lwipcore::@1dbeb22f62ed92dcafe5"
-		},
-		{
-			"backtrace" : 2,
-			"id" : "lwipallapps::@1dbeb22f62ed92dcafe5"
 		}
 	],
 	"id" : "example_app::@1dbeb22f62ed92dcafe5",
@@ -303,6 +303,16 @@
 			{
 				"backtrace" : 2,
 				"fragment" : "contrib/ports/unix/example_app/liblwipmbedtls.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 5,
+				"fragment" : "/usr/lib/x86_64-linux-gnu/libdbus-1.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 5,
+				"fragment" : "/usr/lib/x86_64-linux-gnu/libpcap.so",
 				"role" : "libraries"
 			},
 			{
