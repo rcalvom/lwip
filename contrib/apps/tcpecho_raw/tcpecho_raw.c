@@ -50,7 +50,10 @@
 #include "lwip/debug.h"
 #include "lwip/stats.h"
 #include "lwip/tcp.h"
+#include "wait_for_event.h"
 #include "tcpecho_raw.h"
+#include "lwip/sys.h"
+
 
 #define TCP_PORT 7
 #define SOCKET_NAME "/tmp/mysocket1"
@@ -146,8 +149,90 @@ struct SyscallPackage {
     };
 };
 
+struct EventCallbackData {
+    uint8_t pending_data;
+    void *arg;
+    struct tcp_pcb *pcb;
+    err_t err;
+};
 
-static struct tcp_pcb *pcb;
+
+
+static struct SyscallResponsePackage syscallResponse;
+/*static struct SyscallPackage syscallPackage;*/
+static struct EventCallbackData ecData;
+
+static struct event ev_object;
+
+#define MAX_SOCKET_ARRAY 10
+
+struct tcp_pcb socketArray[MAX_SOCKET_ARRAY];
+struct tcp_pcb* pcb_impl;
+int socketCounter = 3;
+
+struct event * event_create( void )
+{
+    struct event * ev = (struct event*) malloc( sizeof( struct event ) );
+
+    ev->event_triggered = false;
+    pthread_mutex_init( &ev->mutex, NULL );
+    pthread_cond_init( &ev->cond, NULL );
+    return ev;
+}
+
+void event_delete( struct event * ev )
+{
+    pthread_mutex_destroy( &ev->mutex );
+    pthread_cond_destroy( &ev->cond );
+    free( ev );
+}
+
+bool event_wait( struct event * ev )
+{
+    pthread_mutex_lock( &ev->mutex );
+
+    while( ev->event_triggered == false )
+    {
+        pthread_cond_wait( &ev->cond, &ev->mutex );
+    }
+
+    ev->event_triggered = false;
+    pthread_mutex_unlock( &ev->mutex );
+    return true;
+}
+bool event_wait_timed( struct event * ev,
+                       time_t ms )
+{
+    struct timespec ts;
+    int ret = 0;
+
+    clock_gettime( CLOCK_REALTIME, &ts );
+    ts.tv_sec += ms / 1000;
+    ts.tv_nsec += ((ms % 1000) * 1000000);
+    pthread_mutex_lock( &ev->mutex );
+
+    while( (ev->event_triggered == false) && (ret == 0) )
+    {
+        ret = pthread_cond_timedwait( &ev->cond, &ev->mutex, &ts );
+
+        if( ( ret == -1 ) && ( errno == ETIMEDOUT ) )
+        {
+            return false;
+        }
+    }
+
+    ev->event_triggered = false;
+    pthread_mutex_unlock( &ev->mutex );
+    return true;
+}
+
+void event_signal( struct event * ev )
+{
+    pthread_mutex_lock( &ev->mutex );
+    ev->event_triggered = true;
+    pthread_cond_signal( &ev->cond );
+    pthread_mutex_unlock( &ev->mutex );
+}
 
 
 static void tcp_free(struct tcp_raw_state *state){
@@ -198,7 +283,6 @@ static void tcp_raw_error(void *arg, err_t err) {
     tcp_free(state);
 }
 
-
 static err_t tcp_raw_poll(void *arg, struct tcp_pcb *tpcb) {
     err_t ret_err;
     struct tcp_raw_state *state;
@@ -218,7 +302,6 @@ static err_t tcp_raw_poll(void *arg, struct tcp_pcb *tpcb) {
     }
     return ret_err;
 }
-
 
 static err_t tcp_sent_callback(void *arg, struct tcp_pcb *tpcb, unsigned short int len) {
     struct tcp_raw_state *state;
@@ -279,6 +362,12 @@ static err_t tcp_recv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, 
 static err_t tcp_accept_callback(void *arg, struct tcp_pcb *new_pcb, err_t err) {
     err_t ret_err;
     struct tcp_raw_state *state;
+
+    printf("$$$ Accept Callback! $$$\n");
+    ecData.arg = arg;
+    ecData.pcb = new_pcb;
+    ecData.err = err;
+
     LWIP_UNUSED_ARG(arg);
     if ((err != ERR_OK) || (new_pcb == NULL)) {
         return ERR_VAL;
@@ -296,21 +385,27 @@ static err_t tcp_accept_callback(void *arg, struct tcp_pcb *new_pcb, err_t err) 
         tcp_poll(new_pcb, tcp_raw_poll, 0);
         tcp_sent(new_pcb, tcp_sent_callback);
         ret_err = ERR_OK;
+        ecData.pending_data = 1;
     } else {
         ret_err = ERR_MEM;
     }
+    event_signal(&ev_object);
     return ret_err;
 }
+
+/*static void packetdrill_bridge_thread(void* args){
+
+}*/
 
 /**
  * Function to initialize tcp server
  */
 void tcp_server_init(void) {
-
     struct sockaddr_un addr;
     struct SyscallPackage syscallPackage;
-    struct tcp_raw_state *state;
-    int sfd, cfd;
+    int loop;
+    /*struct tcp_raw_state *state;*/
+    int sfd, cfd, numWrote;
     ssize_t numRead;
 
     printf("Creating socket to PacketDrill ... \n");
@@ -339,15 +434,16 @@ void tcp_server_init(void) {
         exit(EXIT_FAILURE);
     }
 
-    for (;;) {
+    loop = 1;
+    while (loop) {
         cfd = accept(sfd, NULL, NULL);
         if (cfd == -1) {
             printf("Error accepting connection from PacketDrill ... \n");
             exit(EXIT_FAILURE);
         }
-        state = (struct tcp_raw_state *) mem_malloc(sizeof(struct tcp_raw_state));
+        /*0state = (struct tcp_raw_state *) mem_malloc(sizeof(struct tcp_raw_state));*/
 
-        while ((numRead = read(cfd, &syscallPackage, sizeof(struct SyscallPackage))) > 0) {
+        while (loop && (numRead = read(cfd, &syscallPackage, sizeof(struct SyscallPackage))) > 0) {
             if (syscallPackage.bufferedMessage == 1) {
                 void *buffer = malloc(syscallPackage.bufferedCount);
                 ssize_t bufferCount = read(cfd, buffer, syscallPackage.bufferedCount);
@@ -363,27 +459,98 @@ void tcp_server_init(void) {
             printf("Packetdrill command received: %s\n", syscallPackage.syscallId);
 
             if (strcmp(syscallPackage.syscallId, "socket_create") == 0) {
-                struct SocketPackage socketPackage = syscallPackage.socketPackage;
-                if (socketPackage.protocol == 6) {
-                    pcb = tcp_new_ip_type(IPADDR_TYPE_ANY);
+                /*struct tcp_pcb *pcb;*/
+                /*struct SocketPackage socketPackage;*/
+                /*socketPackage = syscallPackage.socketPackage;*/
+                /*if (socketPackage.protocol == 6) {*/
+                pcb_impl = tcp_new_ip_type(IPADDR_TYPE_ANY);
+                if (pcb_impl == NULL) {
+                    printf("Error in \"socket_create\" instruction: Exit");
+                    exit(EXIT_FAILURE);
                 }
+                /*}*/
+                /*socketArray[socketCounter++] = *pcb;
+                pcb_impl = pcb;*/
+                syscallResponse.result = socketCounter;
             } else if (strcmp(syscallPackage.syscallId, "socket_bind") == 0) {
-                tcp_bind(pcb, IP_ANY_TYPE, TCP_PORT);
-            } else if (strcmp(syscallPackage.syscallId, "socket_listen") == 0) {
-                pcb = tcp_listen(pcb);
-            } else if (strcmp(syscallPackage.syscallId, "socket_accept") == 0) {
-                tcp_accept(pcb, tcp_accept_callback);
-            } else if (strcmp(syscallPackage.syscallId, "socket_connect") == 0) {
+                err_t err;
 
+                /*struct tcp_pcb pcb = socketArray[syscallPackage.bindPackage.sockfd];*/
+                err = tcp_bind(pcb_impl, IP_ANY_TYPE, TCP_PORT);
+                if (err != ERR_OK) {
+                    printf("Error in \"socket_bind\" instruction: Exit");
+                    exit(EXIT_FAILURE);
+                }
+                syscallResponse.result = 0;
+            } else if (strcmp(syscallPackage.syscallId, "socket_listen") == 0) {
+                /*struct tcp_pcb pcb;*/
+                /*err_t err;*/
+                /*pcb = socketArray[syscallPackage.listenPackage.sockfd];*/
+                /*pcb_impl = tcp_listen_with_backlog_and_err(pcb_impl, 0, &err);*/
+                pcb_impl = tcp_listen(pcb_impl);
+                /*if(err != ERR_OK){
+                    printf("Error in \"socket_listen\" instruction: Exit");
+                    exit(EXIT_FAILURE);
+                }*/
+                syscallResponse.result = 0;
+                tcp_accept(pcb_impl, tcp_accept_callback);
+                loop = 0;
+
+            } else if (strcmp(syscallPackage.syscallId, "socket_accept") == 0) {
+
+
+                struct sockaddr_in6 add;
+                struct AcceptResponsePackage acceptResponse;
+                struct tcp_pcb socket;
+
+                tcp_accept(pcb_impl, tcp_accept_callback);
+
+                ev_object = *event_create();
+                printf("About to yield in accept...\n");
+                event_wait(&ev_object);
+                printf("Waking up from yield...\n");
+
+
+                if(ecData.pcb == NULL){
+                    printf("Error in \"socket_accept\" instruction: Exit");
+                    exit(EXIT_FAILURE);
+                }
+
+                socket = *ecData.pcb;
+
+                socketArray[socketCounter++] = socket;
+                add.sin6_family = AF_INET6;
+                add.sin6_port = ecData.pcb->remote_port;
+                memcpy(add.sin6_addr.s6_addr, &ecData.pcb->remote_ip.u_addr.ip4.addr, 16);
+
+                acceptResponse.addr6 = add;
+                acceptResponse.addrlen = sizeof(struct sockaddr_in6);
+
+                if(ecData.err != ERR_OK){
+                    printf("Error in \"socket_accept\" instruction: Exit");
+                    exit(EXIT_FAILURE);
+                }
+                syscallResponse.result = socketCounter;
+                syscallResponse.acceptResponse = acceptResponse;
+
+            } else if (strcmp(syscallPackage.syscallId, "freertos_init") == 0) {
+                syscallResponse.result = 0;
             } else if (strcmp(syscallPackage.syscallId, "socket_write") == 0) {
-                tcp_sent_callback(state, pcb,0);
+                /*tcp_sent_callback(state, pcb,0);*/
             } else if (strcmp(syscallPackage.syscallId, "socket_read") == 0) {
-                tcp_recv_callback(state, pcb, state->p, 0);
+                /*tcp_recv_callback(state, pcb, state->p, 0);*/
             } else if (strcmp(syscallPackage.syscallId, "socket_close") == 0){
-                tcp_raw_close(pcb, state);
+                /*tcp_raw_close(pcb, state);*/
             }
-            /*TODO: possible missing else if statement*/
+            printf("Syscall response buffer received: %d...\n", syscallResponse.result);
+            numWrote = send(cfd, &syscallResponse, sizeof(struct SyscallResponsePackage), MSG_NOSIGNAL);
+            if (numWrote == -1) {
+                printf("Error writing socket response with errno %d...\n", errno);
+            } else {
+                printf("Successfully wrote socket response to Packetdrill...\n");
+            }
+
         }
     }
-
+    /*sys_thread_new("packetdrill_bridge_thread", packetdrill_bridge_thread, NULL, DEFAULT_THREAD_STACKSIZE, DEFAULT_THREAD_PRIO);*/
 }
