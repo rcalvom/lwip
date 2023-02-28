@@ -101,8 +101,8 @@
 #endif
 
 struct tapif {
-  /* Add whatever per-interface state that is needed here. */
-  int fd;
+    /* Add whatever per-interface state that is needed here. */
+    int fd;
 };
 
 /* Forward declarations. */
@@ -119,7 +119,7 @@ static long xInvalidInterfaceDetected = 0;
 
 u_char *uip_buf;
 int uip_len;
-
+static struct netif *net_if;
 
 static void print_hex(unsigned const char * const bin_data, size_t len ){
     size_t i;
@@ -131,7 +131,7 @@ static void print_hex(unsigned const char * const bin_data, size_t len ){
 
 static uint8_t print_output(void *p, ssize_t len){
     if(len > 0) {
-        printf( "Sending  => data send package %li \n ", len);
+        printf( "Sending => data send package %li \n ", len);
         print_hex((unsigned const char *)p, len);
         if(pcap_sendpacket(pxOpenedInterfaceHandle, (const u_char*) p, (int)len) != 0 ){
             printf( "pcap_sendpackeet: send failed\n");
@@ -295,7 +295,7 @@ static int prvOpenInterface(const char * pucName){
 static int prvOpenSelectedNetworkInterface(pcap_if_t * pxAllNetworkInterfaces){
     int ret = 0;
     printf("Print pointer of allNetwork Interfaces %p: \n", (void *)pxAllNetworkInterfaces);
-    if(prvOpenInterface("tap0") == 1) {
+    if(prvOpenInterface("tun0") == 1) {
         printf( "Successfully opened interface tun0.\n");
         ret = 1;
     } else {
@@ -316,10 +316,17 @@ static void pcap_callback(unsigned char * user, const struct pcap_pkthdr *pkt_he
     printf("Receiving <=  network callback user: %s len: %d caplen: %d\n", user, pkt_header->len, pkt_header->caplen);
     print_hex(pkt_data, pkt_header->len);
     if (pkt_header->caplen <= 1214) {
-        memcpy(uip_buf, pkt_data, pkt_header->len);
-        printf("TUN data incoming read: %d\n", pkt_header->len);
-        uip_len = (int) pkt_header->len;
-        /*tcpip_input();*/
+        struct pbuf *p = pbuf_alloc(PBUF_RAW, pkt_header->len, PBUF_POOL);
+        if (p != NULL) {
+            pbuf_take(p, pkt_data, pkt_header->len);
+        } else {
+            MIB2_STATS_NETIF_INC(net_if, ifindiscards);
+            LWIP_DEBUGF(NETIF_DEBUG, ("tapif_input: could not allocate pbuf\n"));
+        }
+        if (net_if->input(p, net_if) != ERR_OK) {
+            LWIP_DEBUGF(NETIF_DEBUG, ("tapif_input: netif input error\n"));
+            pbuf_free(p);
+        }
     }
 }
 
@@ -360,10 +367,10 @@ static int prvCreateWorkerThreads(void) {
     return ret;
 }
 
-static err_t tun_init(struct netif* netif){
+static err_t tun_init(void){
     long ret = 0;
     pcap_if_t *pxAllNetworkInterfaces;
-    printf("Print netif pointer: %p\n", (void *)netif);
+    printf("Print netif pointer: %p\n", (void *)net_if);
     uip_buf = (u_char *) malloc(1024); /*TODO: free this allocated memory*/
     uip_len = 0;
     pxAllNetworkInterfaces = prvGetAvailableNetworkInterfaces();
@@ -495,37 +502,39 @@ low_level_init(struct netif *netif)
 static err_t
 low_level_output(struct netif *netif, struct pbuf *p)
 {
-  /*struct tapif *tapif = (struct tapif *)netif->state;*/
-  char buf[1518]; /* max packet size including VLAN excluding CRC */
-  ssize_t written;
+    /*struct tapif *tapif = (struct tapif *)netif->state;*/
+    char buf[1518]; /* max packet size including VLAN excluding CRC */
+    ssize_t written;
 
 #if 0
-  if (((double)rand()/(double)RAND_MAX) < 0.2) {
+    if (((double)rand()/(double)RAND_MAX) < 0.2) {
     printf("drop output\n");
     return ERR_OK; /* ERR_OK because we simulate packet loss on cable */
   }
 #endif
 
-  if (p->tot_len > sizeof(buf)) {
-    MIB2_STATS_NETIF_INC(netif, ifoutdiscards);
-    perror("tapif: packet too large");
-    return ERR_IF;
-  }
+    printf("low_level_output...\n");
 
-  /* initiate transfer(); */
-  pbuf_copy_partial(p, buf, p->tot_len, 0);
+    if (p->tot_len > sizeof(buf)) {
+        MIB2_STATS_NETIF_INC(netif, ifoutdiscards);
+        perror("tapif: packet too large");
+        return ERR_IF;
+    }
 
-  /* signal that packet should be sent(); */
-  /*written = write(tapif->fd, buf, p->tot_len);*/
-  written = print_output(buf, p->tot_len);
-  if (written < p->tot_len) {
-    MIB2_STATS_NETIF_INC(netif, ifoutdiscards);
-    perror("tapif: write");
-    return ERR_IF;
-  } else {
-    MIB2_STATS_NETIF_ADD(netif, ifoutoctets, (u32_t)written);
-    return ERR_OK;
-  }
+    /* initiate transfer(); */
+    pbuf_copy_partial(p, buf, p->tot_len, 0);
+
+    /* signal that packet should be sent(); */
+    /*written = write(tapif->fd, buf, p->tot_len);*/
+    written = print_output(buf, p->tot_len);
+    if (written < p->tot_len) {
+        MIB2_STATS_NETIF_INC(netif, ifoutdiscards);
+        perror("tapif: write");
+        return ERR_IF;
+    } else {
+        MIB2_STATS_NETIF_ADD(netif, ifoutoctets, (u32_t)written);
+        return ERR_OK;
+    }
 }
 /*-----------------------------------------------------------------------------------*/
 /*
@@ -539,42 +548,42 @@ low_level_output(struct netif *netif, struct pbuf *p)
 static struct pbuf *
 low_level_input(struct netif *netif)
 {
-  struct pbuf *p;
-  u16_t len;
-  ssize_t readlen;
-  char buf[1518]; /* max packet size including VLAN excluding CRC */
-  struct tapif *tapif = (struct tapif *)netif->state;
+    struct pbuf *p;
+    u16_t len;
+    ssize_t readlen;
+    char buf[1518]; /* max packet size including VLAN excluding CRC */
+    struct tapif *tapif = (struct tapif *)netif->state;
 
-  /* Obtain the size of the packet and put it into the "len"
-     variable. */
-  readlen = read(tapif->fd, buf, sizeof(buf));
-  if (readlen < 0) {
-    perror("read returned -1");
-    exit(1);
-  }
-  len = (u16_t)readlen;
+    /* Obtain the size of the packet and put it into the "len"
+       variable. */
+    readlen = read(tapif->fd, buf, sizeof(buf));
+    if (readlen < 0) {
+        perror("read returned -1");
+        exit(1);
+    }
+    len = (u16_t)readlen;
 
-  MIB2_STATS_NETIF_ADD(netif, ifinoctets, len);
+    MIB2_STATS_NETIF_ADD(netif, ifinoctets, len);
 
 #if 0
-  if (((double)rand()/(double)RAND_MAX) < 0.2) {
+    if (((double)rand()/(double)RAND_MAX) < 0.2) {
     printf("drop\n");
     return NULL;
   }
 #endif
 
-  /* We allocate a pbuf chain of pbufs from the pool. */
-  p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL);
-  if (p != NULL) {
-    pbuf_take(p, buf, len);
-    /* acknowledge that packet has been read(); */
-  } else {
-    /* drop packet(); */
-    MIB2_STATS_NETIF_INC(netif, ifindiscards);
-    LWIP_DEBUGF(NETIF_DEBUG, ("tapif_input: could not allocate pbuf\n"));
-  }
+    /* We allocate a pbuf chain of pbufs from the pool. */
+    p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL);
+    if (p != NULL) {
+        pbuf_take(p, buf, len);
+        /* acknowledge that packet has been read(); */
+    } else {
+        /* drop packet(); */
+        MIB2_STATS_NETIF_INC(netif, ifindiscards);
+        LWIP_DEBUGF(NETIF_DEBUG, ("tapif_input: could not allocate pbuf\n"));
+    }
 
-  return p;
+    return p;
 }
 
 /*-----------------------------------------------------------------------------------*/
@@ -591,20 +600,20 @@ low_level_input(struct netif *netif)
 static void
 tapif_input(struct netif *netif)
 {
-  struct pbuf *p = low_level_input(netif);
+    struct pbuf *p = low_level_input(netif);
 
-  if (p == NULL) {
+    if (p == NULL) {
 #if LINK_STATS
-    LINK_STATS_INC(link.recv);
+        LINK_STATS_INC(link.recv);
 #endif /* LINK_STATS */
-    LWIP_DEBUGF(TAPIF_DEBUG, ("tapif_input: low_level_input returned NULL\n"));
-    return;
-  }
+        LWIP_DEBUGF(TAPIF_DEBUG, ("tapif_input: low_level_input returned NULL\n"));
+        return;
+    }
 
-  if (netif->input(p, netif) != ERR_OK) {
-    LWIP_DEBUGF(NETIF_DEBUG, ("tapif_input: netif input error\n"));
-    pbuf_free(p);
-  }
+    if (netif->input(p, netif) != ERR_OK) {
+        LWIP_DEBUGF(NETIF_DEBUG, ("tapif_input: netif input error\n"));
+        pbuf_free(p);
+    }
 }
 /*-----------------------------------------------------------------------------------*/
 /*
@@ -619,29 +628,30 @@ tapif_input(struct netif *netif)
 err_t
 tapif_init(struct netif *netif)
 {
-  struct tapif *tapif = (struct tapif *)mem_malloc(sizeof(struct tapif));
+    struct tapif *tapif = (struct tapif *)mem_malloc(sizeof(struct tapif));
 
-  if (tapif == NULL) {
-    LWIP_DEBUGF(NETIF_DEBUG, ("tapif_init: out of memory for tapif\n"));
-    return ERR_MEM;
-  }
-  netif->state = tapif;
-  MIB2_INIT_NETIF(netif, snmp_ifType_other, 100000000);
+    if (tapif == NULL) {
+        LWIP_DEBUGF(NETIF_DEBUG, ("tapif_init: out of memory for tapif\n"));
+        return ERR_MEM;
+    }
+    netif->state = tapif;
+    MIB2_INIT_NETIF(netif, snmp_ifType_other, 100000000);
 
-  netif->name[0] = IFNAME0;
-  netif->name[1] = IFNAME1;
+    netif->name[0] = IFNAME0;
+    netif->name[1] = IFNAME1;
 #if LWIP_IPV4
-  netif->output = etharp_output;
+    netif->output = etharp_output;
 #endif
 #if LWIP_IPV6
-  netif->output_ip6 = ethip6_output;
+    netif->output_ip6 = ethip6_output;
 #endif
-  netif->linkoutput = low_level_output;
-  netif->mtu = 1500;
+    netif->linkoutput = low_level_output;
+    netif->mtu = 1500;
 
-  tun_init(netif);
+    net_if = netif;
+    tun_init();
 
-  return ERR_OK;
+    return ERR_OK;
 }
 
 
@@ -649,7 +659,7 @@ tapif_init(struct netif *netif)
 void
 tapif_poll(struct netif *netif)
 {
-  tapif_input(netif);
+    tapif_input(netif);
 }
 
 #if NO_SYS

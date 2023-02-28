@@ -55,7 +55,7 @@
 #include "lwip/sys.h"
 
 
-#define TCP_PORT 7
+#define TCP_PORT 8080
 #define SOCKET_NAME "/tmp/mysocket1"
 
 
@@ -162,7 +162,7 @@ static struct SyscallResponsePackage syscallResponse;
 /*static struct SyscallPackage syscallPackage;*/
 static struct EventCallbackData ecData;
 
-static struct event ev_object;
+static struct event *ev_object;
 
 #define MAX_SOCKET_ARRAY 10
 
@@ -389,7 +389,7 @@ static err_t tcp_accept_callback(void *arg, struct tcp_pcb *new_pcb, err_t err) 
     } else {
         ret_err = ERR_MEM;
     }
-    event_signal(&ev_object);
+    event_signal(ev_object);
     return ret_err;
 }
 
@@ -401,12 +401,15 @@ static err_t tcp_accept_callback(void *arg, struct tcp_pcb *new_pcb, err_t err) 
  * Function to initialize tcp server
  */
 void tcp_server_init(void) {
+
     struct sockaddr_un addr;
     struct SyscallPackage syscallPackage;
     int loop;
     /*struct tcp_raw_state *state;*/
     int sfd, cfd, numWrote;
     ssize_t numRead;
+
+    ev_object = event_create();
 
     printf("Creating socket to PacketDrill ... \n");
 
@@ -463,7 +466,9 @@ void tcp_server_init(void) {
                 /*struct SocketPackage socketPackage;*/
                 /*socketPackage = syscallPackage.socketPackage;*/
                 /*if (socketPackage.protocol == 6) {*/
+                /*LOCK_TCPIP_CORE();*/
                 pcb_impl = tcp_new_ip_type(IPADDR_TYPE_ANY);
+                /*UNLOCK_TCPIP_CORE();*/
                 if (pcb_impl == NULL) {
                     printf("Error in \"socket_create\" instruction: Exit");
                     exit(EXIT_FAILURE);
@@ -476,7 +481,9 @@ void tcp_server_init(void) {
                 err_t err;
 
                 /*struct tcp_pcb pcb = socketArray[syscallPackage.bindPackage.sockfd];*/
+                /*LOCK_TCPIP_CORE();*/
                 err = tcp_bind(pcb_impl, IP_ANY_TYPE, TCP_PORT);
+                /*UNLOCK_TCPIP_CORE();*/
                 if (err != ERR_OK) {
                     printf("Error in \"socket_bind\" instruction: Exit");
                     exit(EXIT_FAILURE);
@@ -487,14 +494,16 @@ void tcp_server_init(void) {
                 /*err_t err;*/
                 /*pcb = socketArray[syscallPackage.listenPackage.sockfd];*/
                 /*pcb_impl = tcp_listen_with_backlog_and_err(pcb_impl, 0, &err);*/
+                /*LOCK_TCPIP_CORE();*/
                 pcb_impl = tcp_listen(pcb_impl);
+                /*UNLOCK_TCPIP_CORE();*/
                 /*if(err != ERR_OK){
                     printf("Error in \"socket_listen\" instruction: Exit");
                     exit(EXIT_FAILURE);
                 }*/
                 syscallResponse.result = 0;
-                tcp_accept(pcb_impl, tcp_accept_callback);
-                loop = 0;
+
+                /*loop = 0;*/
 
             } else if (strcmp(syscallPackage.syscallId, "socket_accept") == 0) {
 
@@ -503,11 +512,12 @@ void tcp_server_init(void) {
                 struct AcceptResponsePackage acceptResponse;
                 struct tcp_pcb socket;
 
+                /*LOCK_TCPIP_CORE();*/
                 tcp_accept(pcb_impl, tcp_accept_callback);
+                /*UNLOCK_TCPIP_CORE();*/
 
-                ev_object = *event_create();
                 printf("About to yield in accept...\n");
-                event_wait(&ev_object);
+                event_wait(ev_object);
                 printf("Waking up from yield...\n");
 
 
