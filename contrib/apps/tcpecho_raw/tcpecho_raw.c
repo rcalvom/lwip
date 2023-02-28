@@ -160,14 +160,13 @@ struct EventCallbackData {
 
 static struct SyscallResponsePackage syscallResponse;
 /*static struct SyscallPackage syscallPackage;*/
-static struct EventCallbackData ecData;
+static struct EventCallbackData event_data;
 
-static struct event *ev_object;
+static struct event *event_object;
 
 #define MAX_SOCKET_ARRAY 10
 
 struct tcp_pcb socketArray[MAX_SOCKET_ARRAY];
-struct tcp_pcb* pcb_impl;
 int socketCounter = 3;
 
 struct event * event_create( void )
@@ -364,9 +363,9 @@ static err_t tcp_accept_callback(void *arg, struct tcp_pcb *new_pcb, err_t err) 
     struct tcp_raw_state *state;
 
     printf("$$$ Accept Callback! $$$\n");
-    ecData.arg = arg;
-    ecData.pcb = new_pcb;
-    ecData.err = err;
+    event_data.arg = arg;
+    event_data.pcb = new_pcb;
+    event_data.err = err;
 
     LWIP_UNUSED_ARG(arg);
     if ((err != ERR_OK) || (new_pcb == NULL)) {
@@ -385,11 +384,11 @@ static err_t tcp_accept_callback(void *arg, struct tcp_pcb *new_pcb, err_t err) 
         tcp_poll(new_pcb, tcp_raw_poll, 0);
         tcp_sent(new_pcb, tcp_sent_callback);
         ret_err = ERR_OK;
-        ecData.pending_data = 1;
+        event_data.pending_data = 1;
     } else {
         ret_err = ERR_MEM;
     }
-    event_signal(ev_object);
+    event_signal(event_object);
     return ret_err;
 }
 
@@ -404,12 +403,11 @@ void tcp_server_init(void) {
 
     struct sockaddr_un addr;
     struct SyscallPackage syscallPackage;
-    int loop;
-    /*struct tcp_raw_state *state;*/
+    struct tcp_raw_state *state;
     int sfd, cfd, numWrote;
     ssize_t numRead;
 
-    ev_object = event_create();
+    event_object = event_create();
 
     printf("Creating socket to PacketDrill ... \n");
 
@@ -437,16 +435,15 @@ void tcp_server_init(void) {
         exit(EXIT_FAILURE);
     }
 
-    loop = 1;
-    while (loop) {
+    while (1) {
         cfd = accept(sfd, NULL, NULL);
         if (cfd == -1) {
             printf("Error accepting connection from PacketDrill ... \n");
             exit(EXIT_FAILURE);
         }
-        /*0state = (struct tcp_raw_state *) mem_malloc(sizeof(struct tcp_raw_state));*/
+        state = (struct tcp_raw_state *) mem_malloc(sizeof(struct tcp_raw_state));
 
-        while (loop && (numRead = read(cfd, &syscallPackage, sizeof(struct SyscallPackage))) > 0) {
+        while ((numRead = read(cfd, &syscallPackage, sizeof(struct SyscallPackage))) > 0) {
             if (syscallPackage.bufferedMessage == 1) {
                 void *buffer = malloc(syscallPackage.bufferedCount);
                 ssize_t bufferCount = read(cfd, buffer, syscallPackage.bufferedCount);
@@ -462,95 +459,117 @@ void tcp_server_init(void) {
             printf("Packetdrill command received: %s\n", syscallPackage.syscallId);
 
             if (strcmp(syscallPackage.syscallId, "socket_create") == 0) {
-                /*struct tcp_pcb *pcb;*/
-                /*struct SocketPackage socketPackage;*/
-                /*socketPackage = syscallPackage.socketPackage;*/
-                /*if (socketPackage.protocol == 6) {*/
-                /*LOCK_TCPIP_CORE();*/
-                pcb_impl = tcp_new_ip_type(IPADDR_TYPE_ANY);
-                /*UNLOCK_TCPIP_CORE();*/
-                if (pcb_impl == NULL) {
-                    printf("Error in \"socket_create\" instruction: Exit");
-                    exit(EXIT_FAILURE);
-                }
+                struct tcp_pcb *pcb;
+                /*if (syscallPackage.socketPackage.protocol == 6) {*/
+                    LOCK_TCPIP_CORE();
+                    pcb = tcp_new_ip_type(IPADDR_TYPE_ANY);
+                    UNLOCK_TCPIP_CORE();
+                    if (pcb == NULL) {
+                        printf("Error in \"socket_create\" instruction");
+                        syscallResponse.result = -1;
+                    }else{
+                        socketArray[socketCounter++] = *pcb;
+                        syscallResponse.result = socketCounter;
+                    }
                 /*}*/
-                /*socketArray[socketCounter++] = *pcb;
-                pcb_impl = pcb;*/
-                syscallResponse.result = socketCounter;
             } else if (strcmp(syscallPackage.syscallId, "socket_bind") == 0) {
+                struct tcp_pcb *pcb;
+                err_t err;
+                pcb = &socketArray[syscallPackage.bindPackage.sockfd];
+                LOCK_TCPIP_CORE();
+                err = tcp_bind(pcb, IP_ANY_TYPE, TCP_PORT);
+                UNLOCK_TCPIP_CORE();
+                if (err != ERR_OK) {
+                    printf("Error in \"socket_bind\" instruction");
+                    syscallResponse.result = -1;
+                }else {
+                    syscallResponse.result = 0;
+                }
+            } else if (strcmp(syscallPackage.syscallId, "socket_listen") == 0) {
+                struct tcp_pcb *pcb;
                 err_t err;
 
-                /*struct tcp_pcb pcb = socketArray[syscallPackage.bindPackage.sockfd];*/
-                /*LOCK_TCPIP_CORE();*/
-                err = tcp_bind(pcb_impl, IP_ANY_TYPE, TCP_PORT);
-                /*UNLOCK_TCPIP_CORE();*/
-                if (err != ERR_OK) {
-                    printf("Error in \"socket_bind\" instruction: Exit");
-                    exit(EXIT_FAILURE);
+                pcb = &socketArray[syscallPackage.listenPackage.sockfd];
+
+                LOCK_TCPIP_CORE();
+                pcb = tcp_listen_with_backlog_and_err(pcb, 0, &err); /*@todo: check references here*/
+                UNLOCK_TCPIP_CORE();
+
+                if(err != ERR_OK){
+                    printf("Error in \"socket_listen\" instruction");
+                    syscallResponse.result = -1;
+                }else{
+                    syscallResponse.result = 0;
                 }
-                syscallResponse.result = 0;
-            } else if (strcmp(syscallPackage.syscallId, "socket_listen") == 0) {
-                /*struct tcp_pcb pcb;*/
-                /*err_t err;*/
-                /*pcb = socketArray[syscallPackage.listenPackage.sockfd];*/
-                /*pcb_impl = tcp_listen_with_backlog_and_err(pcb_impl, 0, &err);*/
-                /*LOCK_TCPIP_CORE();*/
-                pcb_impl = tcp_listen(pcb_impl);
-                /*UNLOCK_TCPIP_CORE();*/
-                /*if(err != ERR_OK){
-                    printf("Error in \"socket_listen\" instruction: Exit");
-                    exit(EXIT_FAILURE);
-                }*/
-                syscallResponse.result = 0;
-
-                /*loop = 0;*/
-
+                LOCK_TCPIP_CORE();
+                tcp_accept(pcb, tcp_accept_callback);
+                UNLOCK_TCPIP_CORE();
             } else if (strcmp(syscallPackage.syscallId, "socket_accept") == 0) {
-
-
-                struct sockaddr_in6 add;
+                struct tcp_pcb *pcb;
                 struct AcceptResponsePackage acceptResponse;
-                struct tcp_pcb socket;
+                struct sockaddr_in6 add;
 
-                /*LOCK_TCPIP_CORE();*/
-                tcp_accept(pcb_impl, tcp_accept_callback);
-                /*UNLOCK_TCPIP_CORE();*/
+                pcb = &socketArray[syscallPackage.listenPackage.sockfd];
+
+                LOCK_TCPIP_CORE();
+                tcp_accept(pcb, tcp_accept_callback);
+                UNLOCK_TCPIP_CORE();
 
                 printf("About to yield in accept...\n");
-                event_wait(ev_object);
-                printf("Waking up from yield...\n");
+                event_wait(event_object);
+                printf("Waking up from yield in accept...\n");
 
 
-                if(ecData.pcb == NULL){
-                    printf("Error in \"socket_accept\" instruction: Exit");
-                    exit(EXIT_FAILURE);
+                if(event_data.pcb == NULL){
+                    printf("Error in \"socket_accept\" instruction");
                 }
+                socketArray[socketCounter++] = *event_data.pcb;
 
-                socket = *ecData.pcb;
-
-                socketArray[socketCounter++] = socket;
                 add.sin6_family = AF_INET6;
-                add.sin6_port = ecData.pcb->remote_port;
-                memcpy(add.sin6_addr.s6_addr, &ecData.pcb->remote_ip.u_addr.ip4.addr, 16);
+                add.sin6_port = event_data.pcb->remote_port;
+                memcpy(add.sin6_addr.s6_addr, &event_data.pcb->remote_ip.u_addr.ip4.addr, 16);
 
                 acceptResponse.addr6 = add;
                 acceptResponse.addrlen = sizeof(struct sockaddr_in6);
 
-                if(ecData.err != ERR_OK){
-                    printf("Error in \"socket_accept\" instruction: Exit");
-                    exit(EXIT_FAILURE);
-                }
-                syscallResponse.result = socketCounter;
                 syscallResponse.acceptResponse = acceptResponse;
 
-            } else if (strcmp(syscallPackage.syscallId, "freertos_init") == 0) {
-                syscallResponse.result = 0;
+                if(event_data.err != ERR_OK){
+                    printf("Error in \"socket_accept\" instruction: Exit");
+                    syscallResponse.result = -1;
+                }else{
+                    syscallResponse.result = socketCounter;
+                }
+            } else if (strcmp(syscallPackage.syscallId, "socket_connect") == 0) {
+
             } else if (strcmp(syscallPackage.syscallId, "socket_write") == 0) {
-                /*tcp_sent_callback(state, pcb,0);*/
+
+                struct tcp_pcb *pcb;
+                pcb = &socketArray[syscallPackage.listenPackage.sockfd];
+
+                LOCK_TCPIP_CORE();
+                tcp_sent_callback(state, pcb, 0);
+                UNLOCK_TCPIP_CORE();
+
+                /**/
+
+                /*struct tcp_pcb *pcb;
+                pcb = &socketArray[syscallPackage.listenPackage.sockfd];
+
+                LOCK_TCPIP_CORE();
+                tcp_sent_callback(state, pcb, 0);
+                UNLOCK_TCPIP_CORE();
+
+                printf("About to yield in write...\n");
+                event_wait(event_object);
+                printf("Waking up from yield in write...\n");*/
+
             } else if (strcmp(syscallPackage.syscallId, "socket_read") == 0) {
                 /*tcp_recv_callback(state, pcb, state->p, 0);*/
             } else if (strcmp(syscallPackage.syscallId, "socket_close") == 0){
                 /*tcp_raw_close(pcb, state);*/
+            } else if (strcmp(syscallPackage.syscallId, "freertos_init") == 0) {
+                syscallResponse.result = 0;
             }
             printf("Syscall response buffer received: %d...\n", syscallResponse.result);
             numWrote = send(cfd, &syscallResponse, sizeof(struct SyscallResponsePackage), MSG_NOSIGNAL);

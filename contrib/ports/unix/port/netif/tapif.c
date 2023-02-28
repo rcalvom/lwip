@@ -135,9 +135,10 @@ static uint8_t print_output(void *p, ssize_t len){
         print_hex((unsigned const char *)p, len);
         if(pcap_sendpacket(pxOpenedInterfaceHandle, (const u_char*) p, (int)len) != 0 ){
             printf( "pcap_sendpackeet: send failed\n");
+            return 0;
         }
     }
-    return 0;
+    return len;
 }
 
 /*!
@@ -295,11 +296,11 @@ static int prvOpenInterface(const char * pucName){
 static int prvOpenSelectedNetworkInterface(pcap_if_t * pxAllNetworkInterfaces){
     int ret = 0;
     printf("Print pointer of allNetwork Interfaces %p: \n", (void *)pxAllNetworkInterfaces);
-    if(prvOpenInterface("tun0") == 1) {
-        printf( "Successfully opened interface tun0.\n");
+    if(prvOpenInterface("tap0") == 1) {
+        printf( "Successfully opened interface tap0.\n");
         ret = 1;
     } else {
-        printf("Failed to open interface tun0.\n");
+        printf("Failed to open interface tap0.\n");
     }
     return ret;
 }
@@ -397,30 +398,32 @@ static err_t tun_init(void){
 }
 
 /*===========================================================================================*/
-/*static void
+static void
 low_level_init(struct netif *netif)
 {
-  struct tapif *tapif;
+  /*struct tapif *tapif;*/
 #if LWIP_IPV4
   int ret;
   char buf[1024];
 #endif
   char *preconfigured_tapif = getenv("PRECONFIGURED_TAPIF");
 
-  tapif = (struct tapif *)netif->state;
+  /*tapif = (struct tapif *)netif->state;*/
 
-  netif->hwaddr[0] = 0x02;
-  netif->hwaddr[1] = 0x12;
-  netif->hwaddr[2] = 0x34;
-  netif->hwaddr[3] = 0x56;
-  netif->hwaddr[4] = 0x78;
-  netif->hwaddr[5] = 0xab;
+  netif->hwaddr[0] = 0x00;
+  netif->hwaddr[1] = 0x11;
+  netif->hwaddr[2] = 0x22;
+  netif->hwaddr[3] = 0x33;
+  netif->hwaddr[4] = 0x44;
+  netif->hwaddr[5] = 0x41;
   netif->hwaddr_len = 6;
 
 
   netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_IGMP;
 
-  tapif->fd = open(DEVTAP, O_RDWR);
+  tun_init();
+
+  /*tapif->fd = open(DEVTAP, O_RDWR);
   LWIP_DEBUGF(TAPIF_DEBUG, ("tapif_init: fd %d\n", tapif->fd));
   if (tapif->fd == -1) {
 #ifdef LWIP_UNIX_LINUX
@@ -450,7 +453,7 @@ low_level_init(struct netif *netif)
     }
   }
 #endif
-
+*/
   netif_set_link_up(netif);
 
   if (preconfigured_tapif == NULL) {
@@ -485,9 +488,9 @@ low_level_init(struct netif *netif)
   }
 
 #if !NO_SYS
-  sys_thread_new("tapif_thread", tapif_thread, netif, DEFAULT_THREAD_STACKSIZE, DEFAULT_THREAD_PRIO);
+  /*sys_thread_new("tapif_thread", tapif_thread, netif, DEFAULT_THREAD_STACKSIZE, DEFAULT_THREAD_PRIO);*/
 #endif
-}*/
+}
 /*-----------------------------------------------------------------------------------*/
 /*
  * low_level_output():
@@ -649,7 +652,7 @@ tapif_init(struct netif *netif)
     netif->mtu = 1500;
 
     net_if = netif;
-    tun_init();
+    low_level_init(net_if);
 
     return ERR_OK;
 }

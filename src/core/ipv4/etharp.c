@@ -794,8 +794,10 @@ etharp_output(struct netif *netif, struct pbuf *q, const ip4_addr_t *ipaddr)
   const struct eth_addr *dest;
   struct eth_addr mcastaddr;
   const ip4_addr_t *dst_addr = ipaddr;
+  struct eth_addr hardcoded;
 
-  LWIP_ASSERT_CORE_LOCKED();
+
+    LWIP_ASSERT_CORE_LOCKED();
   LWIP_ASSERT("netif != NULL", netif != NULL);
   LWIP_ASSERT("q != NULL", q != NULL);
   LWIP_ASSERT("ipaddr != NULL", ipaddr != NULL);
@@ -888,7 +890,14 @@ etharp_output(struct netif *netif, struct pbuf *q, const ip4_addr_t *ipaddr)
     }
     /* no stable entry found, use the (slower) query function:
        queue on destination Ethernet address belonging to ipaddr */
-    return etharp_query(netif, dst_addr, q);
+    hardcoded.addr[0] = 0x46;
+    hardcoded.addr[1] = 0xE7;
+    hardcoded.addr[2] = 0xD7;
+    hardcoded.addr[3] = 0xAA;
+    hardcoded.addr[4] = 0x9B;
+    hardcoded.addr[5] = 0x5F;
+    return ethernet_output(netif, q, (struct eth_addr *)netif->hwaddr, &hardcoded, ETHTYPE_IP);
+    /*return etharp_query(netif, dst_addr, q);*/
   }
 
   /* continuation for multicast/broadcast destinations */

@@ -148,6 +148,7 @@
 #ifndef USE_AUTOIP
 #define USE_AUTOIP  LWIP_AUTOIP
 #endif
+#define LWIP_IPV6_SEND_ROUTER_SOLICIT   1
 
 /* global variables for netifs */
 #if USE_ETHERNET
@@ -559,7 +560,7 @@ apps_init(void)
 #if LWIP_NETCONN && defined(LWIP_TCPECHO_APP_NETCONN)
   tcpecho_init();
 #else /* LWIP_NETCONN && defined(LWIP_TCPECHO_APP_NETCONN) */
-  tcp_server_init();
+
 #endif
 #endif /* LWIP_TCPECHO_APP && LWIP_NETCONN */
 #if LWIP_UDPECHO_APP && LWIP_NETCONN
@@ -669,7 +670,8 @@ main_loop(void)
 #endif /* NO_SYS */
 
 #if USE_ETHERNET
-    default_netif_poll();
+    /*default_netif_poll();*/
+      tcp_server_init();
 #else /* USE_ETHERNET */
     /* try to read characters from serial line and pass them to PPPoS */
     count = sio_read(ppp_sio, (u8_t*)rxbuf, 1024);
