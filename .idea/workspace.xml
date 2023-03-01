@@ -31,14 +31,11 @@
   <component name="ChangeListManager">
     <list default="true" id="da13d00d-5d49-44e8-a010-ddfd49f11d8e" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/.cmake/api/v1/reply/index-2023-02-27T19-15-42-0121.json" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/contrib/ports/unix/example_app/example_app" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/contrib/ports/unix/example_app/example_app" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/contrib/apps/tcpecho_raw/tcpecho_raw.c" beforeDir="false" afterPath="$PROJECT_DIR$/contrib/apps/tcpecho_raw/tcpecho_raw.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/contrib/examples/example_app/test.c" beforeDir="false" afterPath="$PROJECT_DIR$/contrib/examples/example_app/test.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/contrib/ports/unix/port/netif/tapif.c" beforeDir="false" afterPath="$PROJECT_DIR$/contrib/ports/unix/port/netif/tapif.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/core/ipv4/etharp.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/core/ipv4/etharp.c" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -196,41 +193,5 @@
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/src/core/ipv4/etharp.c</url>
-          <line>808</line>
-          <option name="timeStamp" value="261" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/src/core/ipv4/etharp.c</url>
-          <line>899</line>
-          <option name="timeStamp" value="262" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/src/core/ipv4/etharp.c</url>
-          <line>1012</line>
-          <option name="timeStamp" value="264" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/src/core/ipv4/etharp.c</url>
-          <line>944</line>
-          <option name="timeStamp" value="265" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/src/core/ipv4/etharp.c</url>
-          <line>1218</line>
-          <option name="timeStamp" value="266" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
-    <watches-manager>
-      <configuration name="CMakeRunConfiguration">
-        <watch expression="arp_table[i].state" language="ObjectiveC" />
-      </configuration>
-    </watches-manager>
   </component>
 </project>

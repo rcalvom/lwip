@@ -148,7 +148,6 @@
 #ifndef USE_AUTOIP
 #define USE_AUTOIP  LWIP_AUTOIP
 #endif
-#define LWIP_IPV6_SEND_ROUTER_SOLICIT   1
 
 /* global variables for netifs */
 #if USE_ETHERNET
