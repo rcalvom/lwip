@@ -35,7 +35,7 @@
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/contrib/ports/unix/example_app/example_app" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/contrib/ports/unix/example_app/example_app" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/contrib/apps/tcpecho_raw/tcpecho_raw.c" beforeDir="false" afterPath="$PROJECT_DIR$/contrib/apps/tcpecho_raw/tcpecho_raw.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/contrib/examples/example_app/test.c" beforeDir="false" afterPath="$PROJECT_DIR$/contrib/examples/example_app/test.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/contrib/ports/unix/port/netif/tapif.c" beforeDir="false" afterPath="$PROJECT_DIR$/contrib/ports/unix/port/netif/tapif.c" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

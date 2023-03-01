@@ -30,30 +30,19 @@
  *
  */
 
-#include <fcntl.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
 #include <sys/types.h>
-#include <sys/time.h>
-#include <sys/uio.h>
-#include <sys/socket.h>
 #include <pcap.h>
 
-#include "lwip/opt.h"
 
 #include "lwip/debug.h"
-#include "lwip/def.h"
-#include "lwip/ip.h"
 #include "lwip/mem.h"
 #include "lwip/stats.h"
 #include "lwip/snmp.h"
 #include "lwip/pbuf.h"
-#include "lwip/sys.h"
-#include "lwip/timeouts.h"
 #include "netif/etharp.h"
 #include "lwip/ethip6.h"
 
@@ -62,9 +51,6 @@
 #define IFCONFIG_BIN "/sbin/ifconfig "
 
 #if defined(LWIP_UNIX_LINUX)
-#include <sys/ioctl.h>
-#include <linux/if.h>
-#include <linux/if_tun.h>
 #include <pthread.h>
 /*
  * Creating a tap interface requires special privileges. If the interfaces
@@ -114,14 +100,16 @@ static void tapif_input(struct netif *netif);
 /*-----------------------------------------------------------------------------------*/
 
 static char errbuf[PCAP_ERRBUF_SIZE];
-static pcap_t * pxOpenedInterfaceHandle = NULL;
-static long xInvalidInterfaceDetected = 0;
+static pcap_t *pxOpenedInterfaceHandle = NULL;
 
-u_char *uip_buf;
-int uip_len;
 static struct netif *net_if;
 
-static void print_hex(unsigned const char * const bin_data, size_t len ){
+/**
+ * Print a packet in hexadecimal format
+ * @param bin_data packet to print
+ * @param len length of the packet
+ */
+static void print_hex(unsigned const char * const bin_data, size_t len){
     size_t i;
     for(i = 0; i < len; i++){
         printf("%.2X ", bin_data[i]);
@@ -129,6 +117,12 @@ static void print_hex(unsigned const char * const bin_data, size_t len ){
     printf("\n");
 }
 
+/**
+ * Print to console a packet and sends it through a network interface
+ * @param p pointer to the packet to send
+ * @param len length of the packet
+ * @return length of the packet
+ */
 static uint8_t print_output(void *p, ssize_t len){
     if(len > 0) {
         printf( "Sending => data send package %li \n ", len);
@@ -145,29 +139,25 @@ static uint8_t print_output(void *p, ssize_t len){
  * @brief  get network interfaces from the system
  * @returns the structure list containing all found devices
  */
-static pcap_if_t * prvGetAvailableNetworkInterfaces(void){
-    pcap_if_t * pxAllNetworkInterfaces = NULL;
-    if(xInvalidInterfaceDetected == 0){
-        int ret;
-        ret = pcap_findalldevs( &pxAllNetworkInterfaces, errbuf );
-        if( ret == PCAP_ERROR ){
-            printf("Could not obtain a list of network interfaces\n%s\n", errbuf);
-            pxAllNetworkInterfaces = NULL;
-        } else {
-            printf( "\n\nThe following network interfaces are available:\n\n" );
-        }
+static pcap_if_t *prvGetAvailableNetworkInterfaces(void){
+    pcap_if_t *pxAllNetworkInterfaces = NULL;
+    int ret;
+    ret = pcap_findalldevs(&pxAllNetworkInterfaces, errbuf);
+    if (ret == PCAP_ERROR) {
+        printf("Couldn't obtain a list of network interfaces\n%s\n", errbuf);
+        pxAllNetworkInterfaces = NULL;
     }
     return pxAllNetworkInterfaces;
 }
 
-/*!
+/*/*!
  * @brief remove spaces from pcMessage into pcBuffer
  * @param [out] pcBuffer buffer to fill up
  * @param [in] aBuflen length of pcBuffer
  * @param [in] pcMessage original message
  * @returns
- */
-static const char * prvRemoveSpaces(char *pcBuffer, int aBuflen, const char *pcMessage){
+ /
+static const char *prvRemoveSpaces(char *pcBuffer, int aBuflen, const char *pcMessage){
     char *pcTarget = pcBuffer;
     while((*pcMessage != 0) && (pcTarget < (&pcBuffer[aBuflen - 1]))){
         *(pcTarget++) = *pcMessage;
@@ -181,24 +171,18 @@ static const char * prvRemoveSpaces(char *pcBuffer, int aBuflen, const char *pcM
     }
     *pcTarget = '\0';
     return pcBuffer;
-}
+*/
 
 /*!
  * @brief  print network interfaces available on the system
  * @param[in]   pxAllNetworkInterfaces interface structure list to print
- */
+ /
 static void prvPrintAvailableNetworkInterfaces(pcap_if_t * pxAllNetworkInterfaces){
     pcap_if_t * xInterface;
     int32_t lInterfaceNumber = 1;
     char cBuffer[ 512 ];
-
     if( pxAllNetworkInterfaces != NULL ) {
-        /* Print out the list of network interfaces.  The first in the list
-         * is interface '1', not interface '0'. */
         for( xInterface = pxAllNetworkInterfaces; xInterface != NULL; xInterface = xInterface->next ) {
-            /* The descriptions of the devices can be full of spaces, clean them
-             * a little.  printf() can only be used here because the network is not
-             * up yet - so no other network tasks will be running. */
             printf( "Interface %d - %s\n", lInterfaceNumber, prvRemoveSpaces( cBuffer, sizeof( cBuffer ), xInterface->name ) );
             printf( "              (%s)\n", prvRemoveSpaces( cBuffer, sizeof( cBuffer ), xInterface->description ? xInterface->description : "No description" ) );
             printf( "\n" );
@@ -206,9 +190,9 @@ static void prvPrintAvailableNetworkInterfaces(pcap_if_t * pxAllNetworkInterface
         }
     }
 
-    if( lInterfaceNumber == 1 ) {
-        /* The interface number was never incremented, so the above for() loop
-         * did not execute meaning no interfaces were found. */
+    if(lInterfaceNumber == 1) {
+        * The interface number was never incremented, so the above for() loop
+         * did not execute meaning no interfaces were found. /
         printf( " \nNo network interfaces were found.\n" );
         pxAllNetworkInterfaces = NULL;
     }
@@ -216,15 +200,15 @@ static void prvPrintAvailableNetworkInterfaces(pcap_if_t * pxAllNetworkInterface
     printf("\nThe interface that will be opened is set by ");
     printf("\"configNETWORK_INTERFACE_TO_USE\", which\nshould be defined in FreeRTOSConfig.h\n");
     printf("Attempting to open interface tun0.\n");
-}
+}*/
 
 /*!
  * @brief  set device operation modes
  * @returns pdPASS on success pdFAIL on failure
  */
 static int prvSetDeviceModes(void){
-    int ret = 0;
-    printf("setting device modes of operation...\n");
+    int ret;
+    printf("Setting device modes of operation ...\n");
     do {
         ret = pcap_set_promisc(pxOpenedInterfaceHandle, 1);
         if((ret != 0) && (ret != PCAP_ERROR_ACTIVATED)){
@@ -233,7 +217,7 @@ static int prvSetDeviceModes(void){
         }
         ret = pcap_set_snaplen(pxOpenedInterfaceHandle, 1222);
         if((ret != 0) && (ret != PCAP_ERROR_ACTIVATED)) {
-            printf("coult not set snaplen\n");
+            printf("couldn't not set snaplen\n");
             break;
         }
         ret = pcap_set_timeout(pxOpenedInterfaceHandle, 200);
@@ -251,7 +235,6 @@ static int prvSetDeviceModes(void){
     return ret;
 }
 
-
 /*!
  * @brief  open selected interface given its name
  * @param [in] pucName interface  name to pen
@@ -263,7 +246,7 @@ static int prvOpenInterface(const char * pucName){
     if(pucName != NULL) {
         (void) strncpy(pucInterfaceName, pucName, sizeof(pucInterfaceName));
         pucInterfaceName[sizeof(pucInterfaceName) - (size_t) 1] = '\0';
-        printf("opening interface %s \n", pucInterfaceName);
+        printf("Opening interface %s ... \n", pucInterfaceName);
         pxOpenedInterfaceHandle = pcap_create(pucInterfaceName, errbuf);
         if(pxOpenedInterfaceHandle != NULL) {
             ret = prvSetDeviceModes();
@@ -293,9 +276,9 @@ static int prvOpenInterface(const char * pucName){
  * @param [in] pxAllNetworkInterfaces network interface list to choose from
  * @returns pdPASS on success or pdFAIL when something goes wrong
  */
-static int prvOpenSelectedNetworkInterface(pcap_if_t * pxAllNetworkInterfaces){
+static int prvOpenSelectedNetworkInterface(pcap_if_t *pxAllNetworkInterfaces){
     int ret = 0;
-    printf("Print pointer of allNetwork Interfaces %p: \n", (void *)pxAllNetworkInterfaces);
+    LWIP_UNUSED_ARG(pxAllNetworkInterfaces);
     if(prvOpenInterface("tap0") == 1) {
         printf( "Successfully opened interface tap0.\n");
         ret = 1;
@@ -339,7 +322,7 @@ static void pcap_callback(unsigned char * user, const struct pcap_pkthdr *pkt_he
  * @remarks This function disables signal, to prevent it from being put into
  *          sleep byt the posix port
  */
-static void *prvLinuxPcapRecvThread(void *pvParam) {
+_Noreturn static void *prvLinuxPcapRecvThread(void *pvParam) {
     int ret;
     (void) pvParam;
     for(;;) {
@@ -349,7 +332,6 @@ static void *prvLinuxPcapRecvThread(void *pvParam) {
             printf( "pcap_dispatch error received: %s\n", pcap_geterr( pxOpenedInterfaceHandle));
         }
     }
-    return NULL;
 }
 
 /*!
@@ -360,7 +342,7 @@ static void *prvLinuxPcapRecvThread(void *pvParam) {
  */
 static int prvCreateWorkerThreads(void) {
     pthread_t vPcapRecvThreadHandle;
-    int ret = 1;
+    int ret;
     ret = pthread_create(&vPcapRecvThreadHandle, NULL, prvLinuxPcapRecvThread, NULL);
     if(ret != 0) {
         printf("pthread error %d", ret);
@@ -371,30 +353,19 @@ static int prvCreateWorkerThreads(void) {
 static err_t tun_init(void){
     long ret = 0;
     pcap_if_t *pxAllNetworkInterfaces;
-    printf("Print netif pointer: %p\n", (void *)net_if);
-    uip_buf = (u_char *) malloc(1024); /*TODO: free this allocated memory*/
-    uip_len = 0;
     pxAllNetworkInterfaces = prvGetAvailableNetworkInterfaces();
     if(pxAllNetworkInterfaces != NULL){
-        prvPrintAvailableNetworkInterfaces(pxAllNetworkInterfaces);
         ret = prvOpenSelectedNetworkInterface(pxAllNetworkInterfaces);
-
         if(ret == 1){
-            /* ret = prvCreateThreadSafeBuffers();*/
-
-            /* if( ret == pdPASS )*/
-            /* {*/
             ret = prvCreateWorkerThreads();
-            /* } */
         }
         pcap_freealldevs(pxAllNetworkInterfaces);
     }
     if((pxOpenedInterfaceHandle != NULL) && (ret == 1)){
         ret = 1;
     }
-    printf("tun_init returned %ld....\n", ret);
-    return 0;
-
+    printf("tun_init returned %ld .... \n", ret);
+    return ERR_OK;
 }
 
 /*===========================================================================================*/

@@ -161,9 +161,7 @@ struct EventCallbackData {
 static struct SyscallResponsePackage syscallResponse;
 static struct EventCallbackData event_data;
 
-static struct event *accept_event_object;
-static struct event *read_event_object;
-static struct event *write_event_object;
+static sys_sem_t event_sem;
 
 #define MAX_SOCKET_ARRAY 10
 
@@ -234,7 +232,6 @@ void event_signal( struct event * ev )
     pthread_mutex_unlock( &ev->mutex );
 }
 
-
 static void tcp_free(struct tcp_raw_state *state){
     if (state != NULL) {
         if (state->p) {
@@ -277,7 +274,7 @@ static void tcp_raw_send(struct tcp_pcb *tpcb, struct tcp_raw_state *state) {
         } else {
         }
     }
-    event_signal(write_event_object);
+    sys_sem_signal(&event_sem);
 }
 
 static void tcp_raw_error(void *arg, err_t err) {
@@ -378,7 +375,7 @@ static err_t tcp_recv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, 
         pbuf_free(p);
         ret_err = ERR_OK;
     }
-    event_signal(read_event_object);
+    sys_sem_signal(&event_sem);
     return ret_err;
 }
 
@@ -409,7 +406,7 @@ static err_t tcp_accept_callback(void *arg, struct tcp_pcb *new_pcb, err_t err) 
     event_data.arg = arg;
     event_data.pcb = new_pcb;
     event_data.err = err;
-    event_signal(accept_event_object);
+    sys_sem_signal(&event_sem);
     return ret_err;
 }
 
@@ -423,9 +420,7 @@ void tcp_server_init(void) {
     int sfd, cfd, numWrote;
     ssize_t numRead;
 
-    accept_event_object = event_create();
-    read_event_object = event_create();
-    write_event_object = event_create();
+    sys_sem_new(&event_sem, 0);
 
     printf("Creating socket to PacketDrill ... \n");
 
@@ -453,13 +448,12 @@ void tcp_server_init(void) {
         exit(EXIT_FAILURE);
     }
 
-    while (1) {
+    for (;;) {
         cfd = accept(sfd, NULL, NULL);
         if (cfd == -1) {
             printf("Error accepting connection from PacketDrill ... \n");
             exit(EXIT_FAILURE);
         }
-
         while ((numRead = read(cfd, &syscallPackage, sizeof(struct SyscallPackage))) > 0) {
             if (syscallPackage.bufferedMessage == 1) {
                 void *buffer = malloc(syscallPackage.bufferedCount);
@@ -530,7 +524,8 @@ void tcp_server_init(void) {
                 LWIP_UNUSED_ARG(pcb);
 
                 printf("About to yield in accept...\n");
-                event_wait(accept_event_object);
+                /*event_wait(accept_event_object);*/
+                sys_sem_wait(&event_sem);
                 printf("Waking up from yield in accept...\n");
 
                 if(event_data.pcb == NULL){
@@ -569,11 +564,13 @@ void tcp_server_init(void) {
                 state->p = pbuf_alloc(PBUF_RAW, syscallPackage.bufferedCount, PBUF_POOL);
                 state->p->payload = syscallPackage.buffer;
 
-                printf("About to yield in write...\n");
                 LOCK_TCPIP_CORE();
                 tcp_raw_send(pcb, state);
                 UNLOCK_TCPIP_CORE();
-                event_wait(write_event_object);
+
+                printf("About to yield in write...\n");
+                sys_sem_wait(&event_sem);
+
                 printf("Waking up from yield in write...\n");
 
                 if(event_data.err != ERR_OK){
@@ -590,7 +587,7 @@ void tcp_server_init(void) {
                 LWIP_UNUSED_ARG(pcb);
 
                 printf("About to yield in read...\n");
-                event_wait(read_event_object);
+                sys_sem_wait(&event_sem);
                 printf("Waking up from yield in read...\n");
 
                 if(event_data.err != ERR_OK){
@@ -614,6 +611,18 @@ void tcp_server_init(void) {
             }
 
         }
+        if(numRead == 0){
+            printf("\nExecution completed!!!\nAbout to unlink socket ... \n");
+            if(close(cfd) == -1){
+                perror("Error closing socket\n");
+                exit(EXIT_FAILURE);
+            }
+            exit(EXIT_SUCCESS);
+        }else if(numRead == -1){
+            perror("Error reading from socket\n");
+            exit(EXIT_FAILURE);
+        }
+
+
     }
-    /*sys_thread_new("packetdrill_bridge_thread", packetdrill_bridge_thread, NULL, DEFAULT_THREAD_STACKSIZE, DEFAULT_THREAD_PRIO);*/
 }
