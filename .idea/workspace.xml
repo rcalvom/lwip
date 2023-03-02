@@ -31,12 +31,12 @@
   <component name="ChangeListManager">
     <list default="true" id="da13d00d-5d49-44e8-a010-ddfd49f11d8e" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/.cmake/api/v1/reply/index-2023-02-28T15-33-09-0832.json" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/contrib/ports/unix/example_app/example_app" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/contrib/ports/unix/example_app/example_app" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/contrib/apps/tcpecho_raw/tcpecho_raw.c" beforeDir="false" afterPath="$PROJECT_DIR$/contrib/apps/tcpecho_raw/tcpecho_raw.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/contrib/examples/example_app/wait_for_event.c" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/contrib/examples/example_app/wait_for_event.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/contrib/ports/Common.allports.mk" beforeDir="false" afterPath="$PROJECT_DIR$/contrib/ports/Common.allports.mk" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -94,6 +94,11 @@
     </key>
   </component>
   <component name="RunManager" selected="CMake Application.example_app">
+    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="dist" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lwIP" TARGET_NAME="dist" CONFIG_NAME="Debug">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
@@ -144,6 +149,18 @@
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
+    <configuration name="all" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
+      <makefile filename="$PROJECT_DIR$/build/contrib/ports/unix/example_app/Makefile" target="all" workingDirectory="" arguments="">
+        <envs />
+      </makefile>
+      <method v="2" />
+    </configuration>
+    <configuration name="example_app" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
+      <makefile filename="$PROJECT_DIR$/contrib/ports/unix/example_app/Makefile" target="example_app" workingDirectory="" arguments="">
+        <envs />
+      </makefile>
+      <method v="2" />
+    </configuration>
     <list>
       <item itemvalue="CMake Application.dist" />
       <item itemvalue="CMake Application.example_app" />
@@ -155,7 +172,15 @@
       <item itemvalue="CMake Application.lwipcore" />
       <item itemvalue="CMake Application.lwipmbedtls" />
       <item itemvalue="CMake Application.makefsdata" />
+      <item itemvalue="Makefile Target.all" />
+      <item itemvalue="Makefile Target.example_app" />
     </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Makefile Target.all" />
+        <item itemvalue="Makefile Target.example_app" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
@@ -185,6 +210,7 @@
       <workItem from="1677386631697" duration="1166000" />
       <workItem from="1677504552844" duration="11067000" />
       <workItem from="1677764985291" duration="998000" />
+      <workItem from="1677771492997" duration="5910000" />
     </task>
     <servers />
   </component>

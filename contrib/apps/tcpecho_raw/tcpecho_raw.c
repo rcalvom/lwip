@@ -413,6 +413,10 @@ void tcp_server_init(void) {
 
     for (;;) {
 
+#ifdef __AFL_HAVE_MANUAL_CONTROL
+        while (__AFL_LOOP(1000)) {
+#endif
+
         cfd = accept(sfd, NULL, NULL);
         if (cfd == -1) {
             printf("Error accepting connection from PacketDrill ... \n");
@@ -650,6 +654,9 @@ void tcp_server_init(void) {
             exit(EXIT_FAILURE);
         }
 
+#ifdef __AFL_HAVE_MANUAL_CONTROL
+        }
+#endif
 
     }
 }
