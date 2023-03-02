@@ -35,7 +35,8 @@
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/contrib/ports/unix/example_app/example_app" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/contrib/ports/unix/example_app/example_app" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/contrib/apps/tcpecho_raw/tcpecho_raw.c" beforeDir="false" afterPath="$PROJECT_DIR$/contrib/apps/tcpecho_raw/tcpecho_raw.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/contrib/ports/unix/port/netif/tapif.c" beforeDir="false" afterPath="$PROJECT_DIR$/contrib/ports/unix/port/netif/tapif.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/contrib/examples/example_app/wait_for_event.c" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/contrib/examples/example_app/wait_for_event.h" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -93,11 +94,6 @@
     </key>
   </component>
   <component name="RunManager" selected="CMake Application.example_app">
-    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
     <configuration name="dist" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lwIP" TARGET_NAME="dist" CONFIG_NAME="Debug">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
@@ -188,10 +184,30 @@
       <workItem from="1677086320329" duration="97000" />
       <workItem from="1677386631697" duration="1166000" />
       <workItem from="1677504552844" duration="11067000" />
+      <workItem from="1677764985291" duration="998000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/core/pbuf.c</url>
+          <line>285</line>
+          <option name="timeStamp" value="306" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/core/pbuf.c</url>
+          <line>270</line>
+          <option name="timeStamp" value="307" />
+        </line-breakpoint>
+      </breakpoints>
+      <default-breakpoints>
+        <breakpoint enabled="true" type="CidrExceptionBreakpoint" />
+      </default-breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
