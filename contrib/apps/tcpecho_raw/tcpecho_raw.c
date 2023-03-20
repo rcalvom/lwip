@@ -84,7 +84,7 @@ struct ListenPackage {
 
 struct WritePackage {
     int sockfd;
-    int count;
+    size_t count;
 };
 
 struct SendToPackage {
@@ -99,12 +99,12 @@ struct SendToPackage {
 
 struct ReadPackage {
     int sockfd;
-    int count;
+    size_t count;
 };
 
 struct RecvFromPackage {
     int sockfd;
-    int count;
+    size_t count;
     int flags;
 };
 
@@ -132,7 +132,7 @@ struct SyscallResponsePackage {
 struct SyscallPackage {
     char syscallId[20];
     int bufferedMessage;
-    int bufferedCount;
+    size_t bufferedCount;
     void *buffer;
     union {
         struct SocketPackage socketPackage;
@@ -360,7 +360,9 @@ static int reset_socket_array(void){
         int counter;
         for (counter = 3; counter < socketCounter; counter++) {
             struct tcp_pcb *pcb = &socketArray[counter];
+            LOCK_TCPIP_CORE();
             tcp_close(pcb);
+            UNLOCK_TCPIP_CORE();
         }
         memset(socketArray, 0, MAX_SOCKET_ARRAY * sizeof(struct tcp_pcb));
     }
@@ -412,6 +414,10 @@ void tcp_server_init(void) {
     }
 
     for (;;) {
+
+#ifdef __AFL_HAVE_MANUAL_CONTROL
+        /*while (__AFL_LOOP(1000)) {*/
+#endif
 
         cfd = accept(sfd, NULL, NULL);
         if (cfd == -1) {
@@ -650,6 +656,9 @@ void tcp_server_init(void) {
             exit(EXIT_FAILURE);
         }
 
+#ifdef __AFL_HAVE_MANUAL_CONTROL
+        /*}*/
+#endif
 
     }
 }
