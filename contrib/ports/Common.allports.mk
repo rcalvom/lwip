@@ -31,6 +31,7 @@
 
 #CC=gcc
 #CC=clang
+#CC=/home/ricardo/Documents/Purdue/app/AFLplusplus/afl-clang-fast
 CCDEP?=$(CC)
 
 CFLAGS+=-g -DLWIP_DEBUG -Wall -pedantic \ #-Werror
