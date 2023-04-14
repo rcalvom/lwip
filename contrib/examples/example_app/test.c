@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+#include <sanitizer/asan_interface.h>
 
 /* lwIP core includes */
 #include "lwip/opt.h"

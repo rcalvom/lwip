@@ -189,6 +189,7 @@ struct pbuf {
 
   /** pointer to the actual data in the buffer */
   void *payload;
+  void *payload_backup;
 
   /**
    * total length of this buffer and all next buffers in chain
@@ -201,6 +202,7 @@ struct pbuf {
 
   /** length of this buffer */
   u16_t len;
+  u16_t len_backup;
 
   /** a bit field indicating pbuf type and allocation sources
       (see PBUF_TYPE_FLAG_*, PBUF_ALLOC_FLAG_* and PBUF_TYPE_ALLOC_SRC_MASK)

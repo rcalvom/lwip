@@ -55,8 +55,6 @@
 
 
 #define TCP_PORT 8080
-#define SOCKET_NAME "/tmp/mysocket1"
-
 
 struct SocketPackage {
     int domain;
@@ -174,6 +172,23 @@ static void tcp_free(struct tcp_raw_state *state){
         }
         mem_free(state);
     }
+}
+
+char *getSocketName() {
+    char *socket_name;
+
+    const char *interface_name = getenv("TAP_INTERFACE_NAME");
+
+    if (interface_name != NULL) {
+
+        int len = strlen(interface_name) + strlen("/tmp/socket-") + 1;
+        socket_name = malloc(len * sizeof(char));
+        snprintf(socket_name, len, "/tmp/socket-%s", interface_name);
+    } else {
+        socket_name = strdup("/tmp/socket-default");
+    }
+
+    return socket_name;
 }
 
 static void tcp_raw_close(struct tcp_pcb *tpcb, struct tcp_raw_state *state) {
@@ -384,8 +399,8 @@ void tcp_server_init(void) {
     printf("Creating socket to PacketDrill ... \n");
 
     sys_sem_new(&event_sem, 0);
-    unlink(SOCKET_NAME);
-
+    char *socket_name = getSocketName();
+    unlink(socket_name);
     sfd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (sfd == -1) {
         printf("Error creating socket to PacketDrill ... \n");
@@ -396,7 +411,8 @@ void tcp_server_init(void) {
 
     memset(&addr, 0, sizeof(struct sockaddr_un));
     addr.sun_family = AF_UNIX;
-    strcpy(addr.sun_path, SOCKET_NAME);
+    strcpy(addr.sun_path, socket_name);
+    free(socket_name);
 
     printf("Binding ports in socket to PacketDrill ... \n");
 
@@ -416,7 +432,7 @@ void tcp_server_init(void) {
     for (;;) {
 
 #ifdef __AFL_HAVE_MANUAL_CONTROL
-        /*while (__AFL_LOOP(1000)) {*/
+        while (__AFL_LOOP(1000)) {
 #endif
 
         cfd = accept(sfd, NULL, NULL);
@@ -648,16 +664,16 @@ void tcp_server_init(void) {
             printf("\nExecution completed!\nAbout to unlink socket ... \n");
             if(close(cfd) == -1){
                 perror("Error closing socket\n");
-                exit(EXIT_FAILURE);
+                //exit(EXIT_FAILURE);
             }
-            exit(EXIT_SUCCESS);
+            //exit(EXIT_SUCCESS);
         }else if(numRead == -1){
             perror("Error reading from socket\n");
-            exit(EXIT_FAILURE);
+            //exit(EXIT_FAILURE);
         }
 
 #ifdef __AFL_HAVE_MANUAL_CONTROL
-        /*}*/
+        }
 #endif
 
     }

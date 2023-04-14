@@ -123,7 +123,7 @@ static void print_hex(unsigned const char * const bin_data, size_t len){
  * @param len length of the packet
  * @return length of the packet
  */
-static uint8_t print_output(void *p, ssize_t len){
+uint8_t print_output(void *p, ssize_t len){
     if(len > 0) {
         printf( "Sending => data send package %li \n ", len);
         print_hex((unsigned const char *)p, len);
@@ -279,11 +279,12 @@ static int prvOpenInterface(const char * pucName){
 static int prvOpenSelectedNetworkInterface(pcap_if_t *pxAllNetworkInterfaces){
     int ret = 0;
     LWIP_UNUSED_ARG(pxAllNetworkInterfaces);
-    if(prvOpenInterface("tap0") == 1) {
-        printf( "Successfully opened interface tap0.\n");
+    const char *interface_name = getenv("TAP_INTERFACE_NAME");
+    if(prvOpenInterface(interface_name) == 1) {
+        printf("Successfully opened interface %s.\n", interface_name);
         ret = 1;
     } else {
-        printf("Failed to open interface tap0.\n");
+        printf("Failed to open interface %s.\n", interface_name);
     }
     return ret;
 }
@@ -303,6 +304,7 @@ static void pcap_callback(unsigned char * user, const struct pcap_pkthdr *pkt_he
         struct pbuf *p = pbuf_alloc(PBUF_RAW, pkt_header->len, PBUF_POOL);
         if (p != NULL) {
             pbuf_take(p, pkt_data, pkt_header->len);
+            // @TODO: Poison HERE
         } else {
             MIB2_STATS_NETIF_INC(net_if, ifindiscards);
             LWIP_DEBUGF(NETIF_DEBUG, ("tapif_input: could not allocate pbuf\n"));
