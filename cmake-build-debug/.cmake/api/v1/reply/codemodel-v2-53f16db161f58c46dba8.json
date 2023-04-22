@@ -1,0 +1,160 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1
+					],
+					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.10"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0
+					]
+				},
+				{
+					"build" : "contrib/ports/unix/example_app",
+					"jsonFile" : "directory-contrib.ports.unix.example_app-Debug-b7e3a8fba50370b217d7.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.10"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "contrib/ports/unix/example_app",
+					"targetIndexes" : 
+					[
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0,
+						1
+					],
+					"name" : "lwIP",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "dist::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-dist-Debug-40f890a358a801f18495.json",
+					"name" : "dist",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "example_app::@1dbeb22f62ed92dcafe5",
+					"jsonFile" : "target-example_app-Debug-e27abe3a3b81829d3f28.json",
+					"name" : "example_app",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "lwipallapps::@1dbeb22f62ed92dcafe5",
+					"jsonFile" : "target-lwipallapps-Debug-af03e783517860d93883.json",
+					"name" : "lwipallapps",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "lwipcontribaddons::@1dbeb22f62ed92dcafe5",
+					"jsonFile" : "target-lwipcontribaddons-Debug-5d2b941480874be331b8.json",
+					"name" : "lwipcontribaddons",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "lwipcontribapps::@1dbeb22f62ed92dcafe5",
+					"jsonFile" : "target-lwipcontribapps-Debug-8f0644bd295674e51de5.json",
+					"name" : "lwipcontribapps",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "lwipcontribexamples::@1dbeb22f62ed92dcafe5",
+					"jsonFile" : "target-lwipcontribexamples-Debug-ffbab75a488bbe2e7522.json",
+					"name" : "lwipcontribexamples",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "lwipcontribportunix::@1dbeb22f62ed92dcafe5",
+					"jsonFile" : "target-lwipcontribportunix-Debug-047f860191f3bb32cbda.json",
+					"name" : "lwipcontribportunix",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "lwipcore::@1dbeb22f62ed92dcafe5",
+					"jsonFile" : "target-lwipcore-Debug-3c30b860bdab5735d837.json",
+					"name" : "lwipcore",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "lwipmbedtls::@1dbeb22f62ed92dcafe5",
+					"jsonFile" : "target-lwipmbedtls-Debug-6682ab3d6740fcd89b3b.json",
+					"name" : "lwipmbedtls",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "makefsdata::@1dbeb22f62ed92dcafe5",
+					"jsonFile" : "target-makefsdata-Debug-a1c50936e2cd75c7666e.json",
+					"name" : "makefsdata",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/ricardo/Documents/Purdue/app/lwip/cmake-build-debug",
+		"source" : "/home/ricardo/Documents/Purdue/app/lwip"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 4
+	}
+}

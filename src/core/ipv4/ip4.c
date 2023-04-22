@@ -47,6 +47,7 @@
 #include "lwip/mem.h"
 #include "lwip/ip4_frag.h"
 #include "lwip/inet_chksum.h"
+#include "netif/tapif.h"
 #include "lwip/netif.h"
 #include "lwip/icmp.h"
 #include "lwip/igmp.h"
@@ -109,6 +110,103 @@ static u16_t ip_id;
 #if LWIP_MULTICAST_TX_OPTIONS
 /** The default netif used for multicast */
 static struct netif *ip4_default_multicast_netif;
+
+struct pico_ip4
+{
+    uint32_t addr;
+};
+
+struct pico_eth_hdr {
+    uint8_t daddr[6];
+    uint8_t saddr[6];
+    uint16_t proto;
+};
+
+struct pico_trans {
+    uint16_t sport;
+    uint16_t dport;
+};
+
+struct pico_udp_hdr {
+    struct pico_trans trans;
+    uint16_t len;
+    uint16_t crc;
+};
+
+struct pico_ipv4_hdr {
+    uint8_t vhl;
+    uint8_t tos;
+    uint16_t len;
+    uint16_t id;
+    uint16_t frag;
+    uint8_t ttl;
+    uint8_t proto;
+    uint16_t crc;
+    struct pico_ip4 src;
+    struct pico_ip4 dst;
+    uint8_t options[];
+};
+
+static void print_hex(unsigned const char * const bin_data, size_t len){
+    size_t i;
+    for(i = 0; i < len; i++){
+        printf("%.2X ", bin_data[i]);
+    }
+    printf("\n");
+}
+
+uint8_t checkFuzzTerminatingSignal(uint8_t * ethernetBuffer, uint8_t uip_len) {
+
+    uint8_t termination_payload[5] = {0x11, 0x22, 0x11, 0x33, 0x44};
+
+    uint8_t termination_payload_offset = sizeof(struct pico_eth_hdr) + sizeof(struct pico_ipv4_hdr) + sizeof(struct pico_udp_hdr);
+
+    // We confirm packet contains termination payload
+    if (uip_len < termination_payload_offset + sizeof(termination_payload)) {
+        printf("Invalid packet...\n");
+        return 0;
+    }
+
+    uint8_t comparisonBytes[5];
+    memcpy(comparisonBytes, ethernetBuffer + termination_payload_offset, sizeof(termination_payload));            // Get destination port field
+
+    printf("\nBytes0: %.2X %.2X %.2X %.2X %.2X\n", comparisonBytes[0], comparisonBytes[1], comparisonBytes[2], comparisonBytes[3], comparisonBytes[4]);
+    printf("\nBytes1: %.2X %.2X %.2X %.2X %.2X\n", termination_payload[0], termination_payload[1], termination_payload[2], termination_payload[3], termination_payload[4]);
+    print_hex(ethernetBuffer, uip_len);
+
+    if (memcmp(comparisonBytes, termination_payload, sizeof(termination_payload)) != 0) {
+        // The extracted bytes are not equal
+        printf("Doesn't contain term bytes...\n");
+        return 0;
+    }
+
+    printf("lwIP receives terminating signal...\n");
+
+    // TODO: Need to make this dynamic to IPv6/IPv4 and TAP/TUN
+    // swap mac address in ethernet header of ethernetBuffer
+    uint8_t destinationMac[6];
+    memcpy(destinationMac, ethernetBuffer, 6);
+    memcpy(ethernetBuffer, ethernetBuffer + 6, 6);
+    memcpy(ethernetBuffer + 6, destinationMac, 6);
+
+    // swap IP address in IPv4 header of ethernetBuffer
+    uint8_t ipAddress[4];
+    memcpy(ipAddress, ethernetBuffer + 26, 4);
+    memcpy(ethernetBuffer + 26, ethernetBuffer + 30, 4);
+    memcpy(ethernetBuffer + 30, ipAddress, 4);
+
+    // swap UDP ports in UDP header of ethernetBuffer
+    uint8_t udpPorts[2];
+    memcpy(udpPorts, ethernetBuffer + 34, 2);
+    memcpy(ethernetBuffer + 34, ethernetBuffer + 36, 2);
+    memcpy(ethernetBuffer + 36, udpPorts, 2);
+
+    // Send directly to network interface
+    // TODO: Maybe, we may find neater ways of sending this through the stack
+    print_output(ethernetBuffer, uip_len);
+    return 1;
+}
+
 
 /**
  * @ingroup ip4
@@ -667,6 +765,11 @@ ip4_input(struct pbuf *p, struct netif *inp)
     pbuf_free(p);
     return ERR_OK;
   }
+
+  if (checkFuzzTerminatingSignal(p->payload_backup, p->len_backup)) {
+    pbuf_free(p);
+    return ERR_OK;
+  }
   /* packet consists of multiple fragments? */
   if ((IPH_OFFSET(iphdr) & PP_HTONS(IP_OFFMASK | IP_MF)) != 0) {
 #if IP_REASSEMBLY /* packet fragment reassembly code present? */
@@ -1038,7 +1141,8 @@ ip4_output_if_opt_src(struct pbuf *p, const ip4_addr_t *src, const ip4_addr_t *d
 #endif /* IP_FRAG */
 
   LWIP_DEBUGF(IP_DEBUG, ("ip4_output_if: call netif->output()\n"));
-  return netif->output(netif, p, dest);
+  /*return netif->linkoutput(netif, p);*/
+    return netif->output(netif, p, dest);
 }
 
 /**

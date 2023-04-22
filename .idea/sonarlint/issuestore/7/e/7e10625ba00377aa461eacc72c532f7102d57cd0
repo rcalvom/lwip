@@ -1,0 +1,21 @@
+
+R	cpp:S5028)"8Replace this macro by "const", "constexpr" or an "enum".(¸­©²úÿÿÿÿ
+R	cpp:S5028-"8Replace this macro by "const", "constexpr" or an "enum".(Â¬ıÿÿÿÿ
+M	cpp:S5028g"8Replace this macro by "const", "constexpr" or an "enum".(œŸ’
+L	cpp:S5028s"8Replace this macro by "const", "constexpr" or an "enum".(‡¶ï
+R	cpp:S5028{"8Replace this macro by "const", "constexpr" or an "enum".(ã¿Ã¯ÿÿÿÿÿ
+M	cpp:S5028"8Replace this macro by "const", "constexpr" or an "enum".(¯Ç”J
+N	cpp:S5028´"8Replace this macro by "const", "constexpr" or an "enum".(›Ïş¡
+N	cpp:S5028Ä"8Replace this macro by "const", "constexpr" or an "enum".(ÀÏ·
+S	cpp:S5028Ï"8Replace this macro by "const", "constexpr" or an "enum".(àµ»Æşÿÿÿÿ
+S	cpp:S5028×"8Replace this macro by "const", "constexpr" or an "enum".(æ‹–óÿÿÿÿÿ
+_cpp:S954”"JMove all #include directives to the very top of the file, before any code.(”À¤Ç
+P	cpp:S5416}";"using" should be preferred to "typedef" for type aliasing.(ÊÑË÷
+O	cpp:S5416~";"using" should be preferred to "typedef" for type aliasing.(Ç‡úv
+U	cpp:S5416";"using" should be preferred to "typedef" for type aliasing.(¦àÇ¶ûÿÿÿÿ
+Q	cpp:S5416€";"using" should be preferred to "typedef" for type aliasing.(´¶åí
+V	cpp:S5416";"using" should be preferred to "typedef" for type aliasing.(˜÷Äıÿÿÿÿ
+V	cpp:S5416‚";"using" should be preferred to "typedef" for type aliasing.(İ¹ËÆúÿÿÿÿ
+Q	cpp:S5416„";"using" should be preferred to "typedef" for type aliasing.(›ù¼Õ
+Q	cpp:S5416…";"using" should be preferred to "typedef" for type aliasing.(İô´ó
+Q	cpp:S5416‡";"using" should be preferred to "typedef" for type aliasing.(¸‘¿Å

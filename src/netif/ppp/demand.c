@@ -406,9 +406,9 @@ demand_rexmit(proto, newip)
 		    syslog(LOG_INFO,"Open %s %s:%d -> %s:%d\n",
 			pkt->data[13] == 6 ? "TCP" : "UDP",
 			ipstr,
-			ntohs(*( (short *) (pkt->data+iphdr+4))),
+			l_ntohs(*( (short *) (pkt->data+iphdr+4))),
 			inet_ntoa(*( (struct in_addr *) (pkt->data+20))),
-			ntohs(*( (short *) (pkt->data+iphdr+6))));
+			l_ntohs(*( (short *) (pkt->data+iphdr+6))));
                 }
             }
 	    output(pcb, pkt->data, pkt->length);

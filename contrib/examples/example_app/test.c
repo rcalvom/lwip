@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+#include <sanitizer/asan_interface.h>
 
 /* lwIP core includes */
 #include "lwip/opt.h"
@@ -559,7 +560,7 @@ apps_init(void)
 #if LWIP_NETCONN && defined(LWIP_TCPECHO_APP_NETCONN)
   tcpecho_init();
 #else /* LWIP_NETCONN && defined(LWIP_TCPECHO_APP_NETCONN) */
-  tcpecho_raw_init();
+
 #endif
 #endif /* LWIP_TCPECHO_APP && LWIP_NETCONN */
 #if LWIP_UDPECHO_APP && LWIP_NETCONN
@@ -662,14 +663,17 @@ main_loop(void)
 #endif
 
   /* MAIN LOOP for driver update (and timers if NO_SYS) */
-  while (!LWIP_EXAMPLE_APP_ABORT()) {
+  while (1) {
 #if NO_SYS
     /* handle timers (already done in tcpip.c when NO_SYS=0) */
     sys_check_timeouts();
 #endif /* NO_SYS */
 
+
 #if USE_ETHERNET
-    default_netif_poll();
+    /*default_netif_poll();*/
+
+      tcp_server_init();
 #else /* USE_ETHERNET */
     /* try to read characters from serial line and pass them to PPPoS */
     count = sio_read(ppp_sio, (u8_t*)rxbuf, 1024);

@@ -24,10 +24,10 @@
 /* Following #undefs are here to keep compiler from issuing warnings
    about them being double defined. (They are defined in lwip/inet.h
    as well as the Unix #includes below.) */
-#undef htonl
-#undef ntohl
-#undef htons
-#undef ntohs
+#undef l_htonl
+#undef l_ntohl
+#undef l_htons
+#undef l_ntohs
 #undef HTONL
 #undef NTOHL
 #undef HTONS

@@ -30,29 +30,19 @@
  *
  */
 
-#include <fcntl.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
 #include <sys/types.h>
-#include <sys/time.h>
-#include <sys/uio.h>
-#include <sys/socket.h>
+#include <pcap.h>
 
-#include "lwip/opt.h"
 
 #include "lwip/debug.h"
-#include "lwip/def.h"
-#include "lwip/ip.h"
 #include "lwip/mem.h"
 #include "lwip/stats.h"
 #include "lwip/snmp.h"
 #include "lwip/pbuf.h"
-#include "lwip/sys.h"
-#include "lwip/timeouts.h"
 #include "netif/etharp.h"
 #include "lwip/ethip6.h"
 
@@ -61,9 +51,7 @@
 #define IFCONFIG_BIN "/sbin/ifconfig "
 
 #if defined(LWIP_UNIX_LINUX)
-#include <sys/ioctl.h>
-#include <linux/if.h>
-#include <linux/if_tun.h>
+#include <pthread.h>
 /*
  * Creating a tap interface requires special privileges. If the interfaces
  * is created in advance with `tunctl -u <user>` it can be opened as a regular
@@ -99,51 +87,323 @@
 #endif
 
 struct tapif {
-  /* Add whatever per-interface state that is needed here. */
-  int fd;
+    /* Add whatever per-interface state that is needed here. */
+    int fd;
 };
 
 /* Forward declarations. */
 static void tapif_input(struct netif *netif);
 #if !NO_SYS
-static void tapif_thread(void *arg);
+/*static void tapif_thread(void *arg);*/
 #endif /* !NO_SYS */
 
 /*-----------------------------------------------------------------------------------*/
+
+static char errbuf[PCAP_ERRBUF_SIZE];
+static pcap_t *pxOpenedInterfaceHandle = NULL;
+
+static struct netif *net_if;
+
+/**
+ * Print a packet in hexadecimal format
+ * @param bin_data packet to print
+ * @param len length of the packet
+ */
+static void print_hex(unsigned const char * const bin_data, size_t len){
+    size_t i;
+    for(i = 0; i < len; i++){
+        printf("%.2X ", bin_data[i]);
+    }
+    printf("\n");
+}
+
+/**
+ * Print to console a packet and sends it through a network interface
+ * @param p pointer to the packet to send
+ * @param len length of the packet
+ * @return length of the packet
+ */
+uint8_t print_output(void *p, ssize_t len){
+    if(len > 0) {
+        printf( "Sending => data send package %li \n ", len);
+        print_hex((unsigned const char *)p, len);
+        if(pcap_sendpacket(pxOpenedInterfaceHandle, (const u_char*) p, (int)len) != 0 ){
+            printf( "pcap_sendpackeet: send failed\n");
+            return 0;
+        }
+    }
+    return len;
+}
+
+/*!
+ * @brief  get network interfaces from the system
+ * @returns the structure list containing all found devices
+ */
+static pcap_if_t *prvGetAvailableNetworkInterfaces(void){
+    pcap_if_t *pxAllNetworkInterfaces = NULL;
+    int ret;
+    ret = pcap_findalldevs(&pxAllNetworkInterfaces, errbuf);
+    if (ret == PCAP_ERROR) {
+        printf("Couldn't obtain a list of network interfaces\n%s\n", errbuf);
+        pxAllNetworkInterfaces = NULL;
+    }
+    return pxAllNetworkInterfaces;
+}
+
+/*/*!
+ * @brief remove spaces from pcMessage into pcBuffer
+ * @param [out] pcBuffer buffer to fill up
+ * @param [in] aBuflen length of pcBuffer
+ * @param [in] pcMessage original message
+ * @returns
+ /
+static const char *prvRemoveSpaces(char *pcBuffer, int aBuflen, const char *pcMessage){
+    char *pcTarget = pcBuffer;
+    while((*pcMessage != 0) && (pcTarget < (&pcBuffer[aBuflen - 1]))){
+        *(pcTarget++) = *pcMessage;
+        if(isspace( *pcMessage ) != 0){
+            while(isspace(*pcMessage) != 0) {
+                pcMessage++;
+            }
+        } else {
+            pcMessage++;
+        }
+    }
+    *pcTarget = '\0';
+    return pcBuffer;
+*/
+
+/*!
+ * @brief  print network interfaces available on the system
+ * @param[in]   pxAllNetworkInterfaces interface structure list to print
+ /
+static void prvPrintAvailableNetworkInterfaces(pcap_if_t * pxAllNetworkInterfaces){
+    pcap_if_t * xInterface;
+    int32_t lInterfaceNumber = 1;
+    char cBuffer[ 512 ];
+    if( pxAllNetworkInterfaces != NULL ) {
+        for( xInterface = pxAllNetworkInterfaces; xInterface != NULL; xInterface = xInterface->next ) {
+            printf( "Interface %d - %s\n", lInterfaceNumber, prvRemoveSpaces( cBuffer, sizeof( cBuffer ), xInterface->name ) );
+            printf( "              (%s)\n", prvRemoveSpaces( cBuffer, sizeof( cBuffer ), xInterface->description ? xInterface->description : "No description" ) );
+            printf( "\n" );
+            lInterfaceNumber++;
+        }
+    }
+
+    if(lInterfaceNumber == 1) {
+        * The interface number was never incremented, so the above for() loop
+         * did not execute meaning no interfaces were found. /
+        printf( " \nNo network interfaces were found.\n" );
+        pxAllNetworkInterfaces = NULL;
+    }
+
+    printf("\nThe interface that will be opened is set by ");
+    printf("\"configNETWORK_INTERFACE_TO_USE\", which\nshould be defined in FreeRTOSConfig.h\n");
+    printf("Attempting to open interface tun0.\n");
+}*/
+
+/*!
+ * @brief  set device operation modes
+ * @returns pdPASS on success pdFAIL on failure
+ */
+static int prvSetDeviceModes(void){
+    int ret;
+    printf("Setting device modes of operation ...\n");
+    do {
+        ret = pcap_set_promisc(pxOpenedInterfaceHandle, 1);
+        if((ret != 0) && (ret != PCAP_ERROR_ACTIVATED)){
+            printf( "couldn't not activate promisuous mode\n" );
+            break;
+        }
+        ret = pcap_set_snaplen(pxOpenedInterfaceHandle, 1222);
+        if((ret != 0) && (ret != PCAP_ERROR_ACTIVATED)) {
+            printf("couldn't not set snaplen\n");
+            break;
+        }
+        ret = pcap_set_timeout(pxOpenedInterfaceHandle, 200);
+        if((ret != 0) && (ret != PCAP_ERROR_ACTIVATED)) {
+            printf("couldn't not set timeout\n");
+            break;
+        }
+        ret = pcap_set_buffer_size(pxOpenedInterfaceHandle, 1222 * 1100);
+        if((ret != 0) && (ret != PCAP_ERROR_ACTIVATED)) {
+            printf("couldn't not set buffer size\n" );
+            break;
+        }
+        ret = 1;
+    } while(0);
+    return ret;
+}
+
+/*!
+ * @brief  open selected interface given its name
+ * @param [in] pucName interface  name to pen
+ * @returns pdPASS on success pdFAIL on failure
+ */
+static int prvOpenInterface(const char * pucName){
+    static char pucInterfaceName[256];
+    int ret = 0;
+    if(pucName != NULL) {
+        (void) strncpy(pucInterfaceName, pucName, sizeof(pucInterfaceName));
+        pucInterfaceName[sizeof(pucInterfaceName) - (size_t) 1] = '\0';
+        printf("Opening interface %s ... \n", pucInterfaceName);
+        pxOpenedInterfaceHandle = pcap_create(pucInterfaceName, errbuf);
+        if(pxOpenedInterfaceHandle != NULL) {
+            ret = prvSetDeviceModes();
+            if(ret == 1) {
+                if(pcap_activate( pxOpenedInterfaceHandle) == 0) {
+                } else {
+                    printf("pcap activate error %s\n", pcap_geterr(pxOpenedInterfaceHandle));
+                    ret = 0;
+                }
+            }
+        } else {
+            printf("\n%s is not supported by pcap and cannot be opened %s\n", pucInterfaceName, errbuf);
+        }
+    } else {
+        printf("could not open interface: name is null\n");
+    }
+
+    return ret;
+}
+
+/*!
+ * @brief Open the network interface. The number of the interface to be opened is
+ *	       set by the configNETWORK_INTERFACE_TO_USE constant in FreeRTOSConfig.h
+ *	       Calling this function will set the pxOpenedInterfaceHandle variable
+ *	       If, after calling this function, pxOpenedInterfaceHandle
+ *	       is equal to NULL, then the interface could not be opened.
+ * @param [in] pxAllNetworkInterfaces network interface list to choose from
+ * @returns pdPASS on success or pdFAIL when something goes wrong
+ */
+static int prvOpenSelectedNetworkInterface(pcap_if_t *pxAllNetworkInterfaces){
+    int ret = 0;
+    LWIP_UNUSED_ARG(pxAllNetworkInterfaces);
+    const char *interface_name = getenv("TAP_INTERFACE_NAME");
+    if(prvOpenInterface(interface_name) == 1) {
+        printf("Successfully opened interface %s.\n", interface_name);
+        ret = 1;
+    } else {
+        printf("Failed to open interface %s.\n", interface_name);
+    }
+    return ret;
+}
+
+/*!
+ * @brief  callback function called from pcap_dispatch function when new
+ *         data arrives on the interface
+ * @param [in] user data sent to pcap_dispatch
+ * @param [in] pkt_header received packet header
+ * @param [in] pkt_data received packet data
+ * @warning this is called from a Linux thread, do not attempt any FreeRTOS calls
+ */
+static void pcap_callback(unsigned char * user, const struct pcap_pkthdr *pkt_header, const u_char *pkt_data) {
+    printf("Receiving <=  network callback user: %s len: %d caplen: %d\n", user, pkt_header->len, pkt_header->caplen);
+    print_hex(pkt_data, pkt_header->len);
+    if (pkt_header->caplen <= 1214) {
+        struct pbuf *p = pbuf_alloc(PBUF_RAW, pkt_header->len, PBUF_POOL);
+        if (p != NULL) {
+            pbuf_take(p, pkt_data, pkt_header->len);
+            // @TODO: Poison HERE
+        } else {
+            MIB2_STATS_NETIF_INC(net_if, ifindiscards);
+            LWIP_DEBUGF(NETIF_DEBUG, ("tapif_input: could not allocate pbuf\n"));
+        }
+        if (net_if->input(p, net_if) != ERR_OK) {
+            LWIP_DEBUGF(NETIF_DEBUG, ("tapif_input: netif input error\n"));
+            pbuf_free(p);
+        }
+    }
+}
+
+/*!
+ * @brief infinite loop pthread to read from pcap
+ * @param [in] pvParam not used
+ * @returns NULL
+ * @warning this is called from a Linux thread, do not attempt any FreeRTOS calls
+ * @remarks This function disables signal, to prevent it from being put into
+ *          sleep byt the posix port
+ */
+_Noreturn static void *prvLinuxPcapRecvThread(void *pvParam) {
+    int ret;
+    (void) pvParam;
+    for(;;) {
+        unsigned char name[6] = {'m', 'y' , 'd', 'a', 't', 'a'};
+        ret = pcap_dispatch( pxOpenedInterfaceHandle, 1, pcap_callback, name);
+        if(ret == -1) {
+            printf( "pcap_dispatch error received: %s\n", pcap_geterr( pxOpenedInterfaceHandle));
+        }
+    }
+}
+
+/*!
+ * @brief launch 2 linux threads, one for Tx and one for Rx
+ *        and one FreeRTOS thread that will simulate an interrupt
+ *        and notify the tcp/ip stack of new data
+ * @return pdPASS on success otherwise pdFAIL
+ */
+static int prvCreateWorkerThreads(void) {
+    pthread_t vPcapRecvThreadHandle;
+    int ret;
+    ret = pthread_create(&vPcapRecvThreadHandle, NULL, prvLinuxPcapRecvThread, NULL);
+    if(ret != 0) {
+        printf("pthread error %d", ret);
+    }
+    return ret;
+}
+
+static err_t tun_init(void){
+    long ret = 0;
+    pcap_if_t *pxAllNetworkInterfaces;
+    pxAllNetworkInterfaces = prvGetAvailableNetworkInterfaces();
+    if(pxAllNetworkInterfaces != NULL){
+        ret = prvOpenSelectedNetworkInterface(pxAllNetworkInterfaces);
+        if(ret == 1){
+            ret = prvCreateWorkerThreads();
+        }
+        pcap_freealldevs(pxAllNetworkInterfaces);
+    }
+    if((pxOpenedInterfaceHandle != NULL) && (ret == 1)){
+        ret = 1;
+    }
+    printf("tun_init returned %ld .... \n", ret);
+    return ERR_OK;
+}
+
+/*===========================================================================================*/
 static void
 low_level_init(struct netif *netif)
 {
-  struct tapif *tapif;
+  /*struct tapif *tapif;*/
 #if LWIP_IPV4
   int ret;
   char buf[1024];
-#endif /* LWIP_IPV4 */
+#endif
   char *preconfigured_tapif = getenv("PRECONFIGURED_TAPIF");
 
-  tapif = (struct tapif *)netif->state;
+  /*tapif = (struct tapif *)netif->state;*/
 
-  /* Obtain MAC address from network interface. */
-
-  /* (We just fake an address...) */
-  netif->hwaddr[0] = 0x02;
-  netif->hwaddr[1] = 0x12;
-  netif->hwaddr[2] = 0x34;
-  netif->hwaddr[3] = 0x56;
-  netif->hwaddr[4] = 0x78;
-  netif->hwaddr[5] = 0xab;
+  netif->hwaddr[0] = 0x00;
+  netif->hwaddr[1] = 0x11;
+  netif->hwaddr[2] = 0x22;
+  netif->hwaddr[3] = 0x33;
+  netif->hwaddr[4] = 0x44;
+  netif->hwaddr[5] = 0x41;
   netif->hwaddr_len = 6;
 
-  /* device capabilities */
+
   netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_IGMP;
 
-  tapif->fd = open(DEVTAP, O_RDWR);
+  tun_init();
+
+  /*tapif->fd = open(DEVTAP, O_RDWR);
   LWIP_DEBUGF(TAPIF_DEBUG, ("tapif_init: fd %d\n", tapif->fd));
   if (tapif->fd == -1) {
 #ifdef LWIP_UNIX_LINUX
     perror("tapif_init: try running \"modprobe tun\" or rebuilding your kernel with CONFIG_TUN; cannot open "DEVTAP);
-#else /* LWIP_UNIX_LINUX */
+#else
     perror("tapif_init: cannot open "DEVTAP);
-#endif /* LWIP_UNIX_LINUX */
+#endif
     exit(1);
   }
 
@@ -157,7 +417,7 @@ low_level_init(struct netif *netif)
     } else {
       strncpy(ifr.ifr_name, DEVTAP_DEFAULT_IF, sizeof(ifr.ifr_name) - 1);
     }
-    ifr.ifr_name[sizeof(ifr.ifr_name)-1] = 0; /* ensure \0 termination */
+    ifr.ifr_name[sizeof(ifr.ifr_name)-1] = 0;
 
     ifr.ifr_flags = IFF_TAP|IFF_NO_PI;
     if (ioctl(tapif->fd, TUNSETIFF, (void *) &ifr) < 0) {
@@ -165,8 +425,8 @@ low_level_init(struct netif *netif)
       exit(1);
     }
   }
-#endif /* LWIP_UNIX_LINUX */
-
+#endif
+*/
   netif_set_link_up(netif);
 
   if (preconfigured_tapif == NULL) {
@@ -182,7 +442,7 @@ low_level_init(struct netif *netif)
              ip4_addr2(netif_ip4_netmask(netif)),
              ip4_addr3(netif_ip4_netmask(netif)),
              ip4_addr4(netif_ip4_netmask(netif))
-#endif /* NETMASK_ARGS */
+#endif
              );
 
     LWIP_DEBUGF(TAPIF_DEBUG, ("tapif_init: system(\"%s\");\n", buf));
@@ -194,15 +454,15 @@ low_level_init(struct netif *netif)
     if (ret != 0) {
       printf("ifconfig returned %d\n", ret);
     }
-#else /* LWIP_IPV4 */
+#else
     perror("todo: support IPv6 support for non-preconfigured tapif");
     exit(1);
-#endif /* LWIP_IPV4 */
+#endif
   }
 
 #if !NO_SYS
-  sys_thread_new("tapif_thread", tapif_thread, netif, DEFAULT_THREAD_STACKSIZE, DEFAULT_THREAD_PRIO);
-#endif /* !NO_SYS */
+  /*sys_thread_new("tapif_thread", tapif_thread, netif, DEFAULT_THREAD_STACKSIZE, DEFAULT_THREAD_PRIO);*/
+#endif
 }
 /*-----------------------------------------------------------------------------------*/
 /*
@@ -218,36 +478,39 @@ low_level_init(struct netif *netif)
 static err_t
 low_level_output(struct netif *netif, struct pbuf *p)
 {
-  struct tapif *tapif = (struct tapif *)netif->state;
-  char buf[1518]; /* max packet size including VLAN excluding CRC */
-  ssize_t written;
+    /*struct tapif *tapif = (struct tapif *)netif->state;*/
+    char buf[1518]; /* max packet size including VLAN excluding CRC */
+    ssize_t written;
 
 #if 0
-  if (((double)rand()/(double)RAND_MAX) < 0.2) {
+    if (((double)rand()/(double)RAND_MAX) < 0.2) {
     printf("drop output\n");
     return ERR_OK; /* ERR_OK because we simulate packet loss on cable */
   }
 #endif
 
-  if (p->tot_len > sizeof(buf)) {
-    MIB2_STATS_NETIF_INC(netif, ifoutdiscards);
-    perror("tapif: packet too large");
-    return ERR_IF;
-  }
+    printf("low_level_output...\n");
 
-  /* initiate transfer(); */
-  pbuf_copy_partial(p, buf, p->tot_len, 0);
+    if (p->tot_len > sizeof(buf)) {
+        MIB2_STATS_NETIF_INC(netif, ifoutdiscards);
+        perror("tapif: packet too large");
+        return ERR_IF;
+    }
 
-  /* signal that packet should be sent(); */
-  written = write(tapif->fd, buf, p->tot_len);
-  if (written < p->tot_len) {
-    MIB2_STATS_NETIF_INC(netif, ifoutdiscards);
-    perror("tapif: write");
-    return ERR_IF;
-  } else {
-    MIB2_STATS_NETIF_ADD(netif, ifoutoctets, (u32_t)written);
-    return ERR_OK;
-  }
+    /* initiate transfer(); */
+    pbuf_copy_partial(p, buf, p->tot_len, 0);
+
+    /* signal that packet should be sent(); */
+    /*written = write(tapif->fd, buf, p->tot_len);*/
+    written = print_output(buf, p->tot_len);
+    if (written < p->tot_len) {
+        MIB2_STATS_NETIF_INC(netif, ifoutdiscards);
+        perror("tapif: write");
+        return ERR_IF;
+    } else {
+        MIB2_STATS_NETIF_ADD(netif, ifoutoctets, (u32_t)written);
+        return ERR_OK;
+    }
 }
 /*-----------------------------------------------------------------------------------*/
 /*
@@ -261,42 +524,42 @@ low_level_output(struct netif *netif, struct pbuf *p)
 static struct pbuf *
 low_level_input(struct netif *netif)
 {
-  struct pbuf *p;
-  u16_t len;
-  ssize_t readlen;
-  char buf[1518]; /* max packet size including VLAN excluding CRC */
-  struct tapif *tapif = (struct tapif *)netif->state;
+    struct pbuf *p;
+    u16_t len;
+    ssize_t readlen;
+    char buf[1518]; /* max packet size including VLAN excluding CRC */
+    struct tapif *tapif = (struct tapif *)netif->state;
 
-  /* Obtain the size of the packet and put it into the "len"
-     variable. */
-  readlen = read(tapif->fd, buf, sizeof(buf));
-  if (readlen < 0) {
-    perror("read returned -1");
-    exit(1);
-  }
-  len = (u16_t)readlen;
+    /* Obtain the size of the packet and put it into the "len"
+       variable. */
+    readlen = read(tapif->fd, buf, sizeof(buf));
+    if (readlen < 0) {
+        perror("read returned -1");
+        exit(1);
+    }
+    len = (u16_t)readlen;
 
-  MIB2_STATS_NETIF_ADD(netif, ifinoctets, len);
+    MIB2_STATS_NETIF_ADD(netif, ifinoctets, len);
 
 #if 0
-  if (((double)rand()/(double)RAND_MAX) < 0.2) {
+    if (((double)rand()/(double)RAND_MAX) < 0.2) {
     printf("drop\n");
     return NULL;
   }
 #endif
 
-  /* We allocate a pbuf chain of pbufs from the pool. */
-  p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL);
-  if (p != NULL) {
-    pbuf_take(p, buf, len);
-    /* acknowledge that packet has been read(); */
-  } else {
-    /* drop packet(); */
-    MIB2_STATS_NETIF_INC(netif, ifindiscards);
-    LWIP_DEBUGF(NETIF_DEBUG, ("tapif_input: could not allocate pbuf\n"));
-  }
+    /* We allocate a pbuf chain of pbufs from the pool. */
+    p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL);
+    if (p != NULL) {
+        pbuf_take(p, buf, len);
+        /* acknowledge that packet has been read(); */
+    } else {
+        /* drop packet(); */
+        MIB2_STATS_NETIF_INC(netif, ifindiscards);
+        LWIP_DEBUGF(NETIF_DEBUG, ("tapif_input: could not allocate pbuf\n"));
+    }
 
-  return p;
+    return p;
 }
 
 /*-----------------------------------------------------------------------------------*/
@@ -313,20 +576,20 @@ low_level_input(struct netif *netif)
 static void
 tapif_input(struct netif *netif)
 {
-  struct pbuf *p = low_level_input(netif);
+    struct pbuf *p = low_level_input(netif);
 
-  if (p == NULL) {
+    if (p == NULL) {
 #if LINK_STATS
-    LINK_STATS_INC(link.recv);
+        LINK_STATS_INC(link.recv);
 #endif /* LINK_STATS */
-    LWIP_DEBUGF(TAPIF_DEBUG, ("tapif_input: low_level_input returned NULL\n"));
-    return;
-  }
+        LWIP_DEBUGF(TAPIF_DEBUG, ("tapif_input: low_level_input returned NULL\n"));
+        return;
+    }
 
-  if (netif->input(p, netif) != ERR_OK) {
-    LWIP_DEBUGF(NETIF_DEBUG, ("tapif_input: netif input error\n"));
-    pbuf_free(p);
-  }
+    if (netif->input(p, netif) != ERR_OK) {
+        LWIP_DEBUGF(NETIF_DEBUG, ("tapif_input: netif input error\n"));
+        pbuf_free(p);
+    }
 }
 /*-----------------------------------------------------------------------------------*/
 /*
@@ -341,29 +604,30 @@ tapif_input(struct netif *netif)
 err_t
 tapif_init(struct netif *netif)
 {
-  struct tapif *tapif = (struct tapif *)mem_malloc(sizeof(struct tapif));
+    struct tapif *tapif = (struct tapif *)mem_malloc(sizeof(struct tapif));
 
-  if (tapif == NULL) {
-    LWIP_DEBUGF(NETIF_DEBUG, ("tapif_init: out of memory for tapif\n"));
-    return ERR_MEM;
-  }
-  netif->state = tapif;
-  MIB2_INIT_NETIF(netif, snmp_ifType_other, 100000000);
+    if (tapif == NULL) {
+        LWIP_DEBUGF(NETIF_DEBUG, ("tapif_init: out of memory for tapif\n"));
+        return ERR_MEM;
+    }
+    netif->state = tapif;
+    MIB2_INIT_NETIF(netif, snmp_ifType_other, 100000000);
 
-  netif->name[0] = IFNAME0;
-  netif->name[1] = IFNAME1;
+    netif->name[0] = IFNAME0;
+    netif->name[1] = IFNAME1;
 #if LWIP_IPV4
-  netif->output = etharp_output;
-#endif /* LWIP_IPV4 */
+    netif->output = etharp_output;
+#endif
 #if LWIP_IPV6
-  netif->output_ip6 = ethip6_output;
-#endif /* LWIP_IPV6 */
-  netif->linkoutput = low_level_output;
-  netif->mtu = 1500;
+    netif->output_ip6 = ethip6_output;
+#endif
+    netif->linkoutput = low_level_output;
+    netif->mtu = 1500;
 
-  low_level_init(netif);
+    net_if = netif;
+    low_level_init(net_if);
 
-  return ERR_OK;
+    return ERR_OK;
 }
 
 
@@ -371,7 +635,7 @@ tapif_init(struct netif *netif)
 void
 tapif_poll(struct netif *netif)
 {
-  tapif_input(netif);
+    tapif_input(netif);
 }
 
 #if NO_SYS
@@ -402,7 +666,7 @@ tapif_select(struct netif *netif)
 
 #else /* NO_SYS */
 
-static void
+/*static void
 tapif_thread(void *arg)
 {
   struct netif *netif;
@@ -417,16 +681,14 @@ tapif_thread(void *arg)
     FD_ZERO(&fdset);
     FD_SET(tapif->fd, &fdset);
 
-    /* Wait for a packet to arrive. */
     ret = select(tapif->fd + 1, &fdset, NULL, NULL, NULL);
 
     if(ret == 1) {
-      /* Handle incoming packet. */
       tapif_input(netif);
     } else if(ret == -1) {
       perror("tapif_thread: select");
     }
   }
-}
+}*/
 
 #endif /* NO_SYS */

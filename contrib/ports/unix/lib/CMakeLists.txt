@@ -29,4 +29,6 @@ target_include_directories(lwip PRIVATE ${LWIP_INCLUDE_DIRS} ${LWIP_MBEDTLS_INCL
 target_link_libraries(lwip ${LWIP_SANITIZER_LIBS})
 
 find_library(LIBPTHREAD pthread)
-target_link_libraries(lwip ${LIBPTHREAD})
+find_library(LIBPCAP pcap)
+find_library(LIBDBUS-1 dbus-1)
+target_link_libraries(lwip ${LIBPTHREAD} ${LIBPCAP} ${LIBDBUS-1})

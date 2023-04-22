@@ -1,0 +1,8 @@
+/snap/clion/222/bin/cmake/linux/x64/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/snap/clion/222/bin/ninja/linux/x64/ninja -G Ninja -S /home/ricardo/Documents/Purdue/app/lwip -B /home/ricardo/Documents/Purdue/app/lwip/cmake-build-debug
+-- Build type: Debug
+-- LWIP_MBEDTLSDIR not set - using default location /home/ricardo/Documents/Purdue/app/lwip/../mbedtls
+-- Could NOT find Doxygen (missing: DOXYGEN_EXECUTABLE) 
+-- Doxygen needs to be installed to generate the doxygen documentation
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/ricardo/Documents/Purdue/app/lwip/cmake-build-debug

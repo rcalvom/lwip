@@ -68,6 +68,8 @@
  *
  */
 
+#include <sanitizer/asan_interface.h>
+
 #include "lwip/opt.h"
 
 #include "lwip/pbuf.h"
@@ -85,6 +87,14 @@
 #endif
 
 #include <string.h>
+
+static void print_hex(unsigned const char * const bin_data, size_t len){
+    size_t i;
+    for(i = 0; i < len; i++){
+        printf("%.2X ", bin_data[i]);
+    }
+    printf("\n");
+}
 
 #define SIZEOF_STRUCT_PBUF        LWIP_MEM_ALIGN_SIZE(sizeof(struct pbuf))
 /* Since the pool is created in memp, PBUF_POOL_BUFSIZE will be automatically
@@ -180,8 +190,10 @@ pbuf_init_alloced_pbuf(struct pbuf *p, void *payload, u16_t tot_len, u16_t len, 
 {
   p->next = NULL;
   p->payload = payload;
+  p->payload_backup = payload;
   p->tot_len = tot_len;
   p->len = len;
+  p->len_backup = len;
   p->type_internal = (u8_t)type;
   p->flags = flags;
   p->ref = 1;
@@ -253,6 +265,16 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
         qlen = LWIP_MIN(rem_len, (u16_t)(PBUF_POOL_BUFSIZE_ALIGNED - LWIP_MEM_ALIGN_SIZE(offset)));
         pbuf_init_alloced_pbuf(q, LWIP_MEM_ALIGN((void *)((u8_t *)q + SIZEOF_STRUCT_PBUF + offset)),
                                rem_len, qlen, type, 0);
+        /*printf("qlen: %i \n", qlen);
+        printf("rem_len: %i\n", rem_len);
+        printf("PBUF_POOL_BUFSIZE_ALIGNED: %i\n", PBUF_POOL_BUFSIZE_ALIGNED);
+        printf("PBUF_POOL_BUFSIZE: %i\n", PBUF_POOL_BUFSIZE);
+        printf("offset: %i\n", offset);
+        printf("LWIP_MEM_ALIGN_SIZE(offset): %i\n", LWIP_MEM_ALIGN_SIZE(offset));
+        printf("PRINT_HEX: \n");
+        print_hex(q->payload, qlen);*/
+        ASAN_UNPOISON_MEMORY_REGION(q->payload, PBUF_POOL_BUFSIZE);
+        ASAN_POISON_MEMORY_REGION(q->payload + qlen, PBUF_POOL_BUFSIZE - qlen);
         LWIP_ASSERT("pbuf_alloc: pbuf q->payload properly aligned",
                     ((mem_ptr_t)q->payload % MEM_ALIGNMENT) == 0);
         LWIP_ASSERT("PBUF_POOL_BUFSIZE must be bigger than MEM_ALIGNMENT",
