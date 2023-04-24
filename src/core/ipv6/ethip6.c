@@ -105,10 +105,19 @@ ethip6_output(struct netif *netif, struct pbuf *q, const ip6_addr_t *ip6addr)
   /* @todo anycast? */
 
   /* Ask ND6 what to do with the packet. */
-  result = nd6_get_next_hop_addr_or_queue(netif, q, ip6addr, &hwaddr);
-  if (result != ERR_OK) {
-    return result;
-  }
+  // result = nd6_get_next_hop_addr_or_queue(netif, q, ip6addr, &hwaddr);
+  // if (result != ERR_OK) {
+  //  return result;
+  // }
+
+  u8_t h[6];
+  h[0] = 0x46;
+  h[1] = 0xE7;
+  h[2] = 0xD7;
+  h[3] = 0xAA;
+  h[4] = 0x9B;
+  h[5] = 0x5F;
+  hwaddr = &h;
 
   /* If no hardware address is returned, nd6 has queued the packet for later. */
   if (hwaddr == NULL) {

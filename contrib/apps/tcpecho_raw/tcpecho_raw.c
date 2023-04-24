@@ -481,7 +481,9 @@ void tcp_server_init(void) {
                 pcb = &socketArray[syscallPackage.bindPackage.sockfd];
 
                 LOCK_TCPIP_CORE();
-                err = tcp_bind(pcb, IP_ANY_TYPE, TCP_PORT);
+                // check if endianness conversion is necessary
+                printf("port: %d", syscallPackage.bindPackage.addr.sin_port);
+                err = tcp_bind(pcb, IP_ANY_TYPE, syscallPackage.bindPackage.addr.sin_port);
                 UNLOCK_TCPIP_CORE();
 
                 if (err != ERR_OK) {
