@@ -64,6 +64,53 @@
 #include LWIP_HOOK_FILENAME
 #endif
 
+
+uint8_t checkFuzzTerminatingSignalIPv6(uint8_t * ethernetBuffer, uint8_t uip_len) {
+    uint8_t termination_payload[5] = {0x11, 0x22, 0x11, 0x33, 0x44};
+
+    uint8_t termination_payload_offset = 14 + 40 + 8;
+
+    // We confirm packet contains termination payload
+    if (uip_len < termination_payload_offset + sizeof(termination_payload)) {
+        return 0;
+    }
+
+    uint8_t comparisonBytes[5];
+    memcpy(comparisonBytes, ethernetBuffer + termination_payload_offset, sizeof(termination_payload));            // Get destination port field
+
+    if (memcmp(comparisonBytes, termination_payload, sizeof(termination_payload)) != 0) {
+        // The extracted bytes are not equal
+        return 0;
+    }
+
+    printf("LwIP receives terminating signal...\n");
+
+    // TODO: Need to make this dynamic to IPv6/IPv4 and TAP/TUN
+    // swap mac address in ethernet header of ethernetBuffer
+    uint8_t destinationMac[6];
+    memcpy(destinationMac, ethernetBuffer, 6);
+    memcpy(ethernetBuffer, ethernetBuffer + 6, 6);
+    memcpy(ethernetBuffer + 6, destinationMac, 6);
+
+    // swap IP address in IPv6 header of ethernetBuffer
+    uint8_t ipAddress[16];
+    memcpy(ipAddress, ethernetBuffer + 22, 16);
+    memcpy(ethernetBuffer + 22, ethernetBuffer + 38, 16);
+    memcpy(ethernetBuffer + 38, ipAddress, 16);
+
+    // swap UDP ports in UDP header of ethernetBuffer
+    uint8_t udpPorts[2];
+    memcpy(udpPorts, ethernetBuffer + 54, 2);
+    memcpy(ethernetBuffer + 54, ethernetBuffer + 56, 2);
+    memcpy(ethernetBuffer + 56, udpPorts, 2);
+
+    // Send directly to network interface
+    // TODO: Maybe, we may find neater ways of sending this through the stack
+    print_output(ethernetBuffer, uip_len);
+    return 1;
+}
+
+
 /**
  * Finds the appropriate network interface for a given IPv6 address. It tries to select
  * a netif following a sequence of heuristics:
@@ -692,6 +739,11 @@ netif_found:
 #endif /* LWIP_IPV6_FORWARD */
     pbuf_free(p);
     goto ip6_input_cleanup;
+  }
+
+  if (checkFuzzTerminatingSignalIPv6(p->payload_backup, p->len_backup)) {
+    pbuf_free(p);
+    return ERR_OK;
   }
 
   /* current netif pointer. */

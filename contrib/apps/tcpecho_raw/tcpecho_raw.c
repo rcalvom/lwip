@@ -395,6 +395,7 @@ void tcp_server_init(void) {
     int sfd, cfd;
     long numWrote;
     ssize_t numRead;
+    int ip_version;
 
     printf("Creating socket to PacketDrill ... \n");
 
@@ -466,6 +467,9 @@ void tcp_server_init(void) {
                 pcb = tcp_new_ip_type(IPADDR_TYPE_ANY);
                 UNLOCK_TCPIP_CORE();
 
+                ip_version = syscallPackage.socketPackage.domain == AF_INET ? 4 : 6;
+                //int protocol = syscallPackage.socketPackage.type = SOCK_STREAM ? PICO_PROTO_TCP : PICO_PROTO_UDP;
+
                 if (pcb == NULL) {
                     printf("Error in \"socket_create\" instruction");
                     syscallResponse.result = -1;
@@ -482,8 +486,8 @@ void tcp_server_init(void) {
 
                 LOCK_TCPIP_CORE();
                 // check if endianness conversion is necessary
-                printf("port: %d", syscallPackage.bindPackage.addr.sin_port);
-                err = tcp_bind(pcb, IP_ANY_TYPE, syscallPackage.bindPackage.addr.sin_port);
+                printf("port: %d", lwip_htons(syscallPackage.bindPackage.addr.sin_port));
+                err = tcp_bind(pcb, IP_ANY_TYPE, lwip_htons(syscallPackage.bindPackage.addr.sin_port));
                 UNLOCK_TCPIP_CORE();
 
                 if (err != ERR_OK) {
@@ -518,7 +522,8 @@ void tcp_server_init(void) {
             } else if (strcmp(syscallPackage.syscallId, "socket_accept") == 0) {
                 struct tcp_pcb *pcb;
                 struct AcceptResponsePackage acceptResponse;
-                struct sockaddr_in add;
+                struct sockaddr_in add4;
+                struct sockaddr_in6 add6;
 
                 LWIP_UNUSED_ARG(pcb);
                 pcb = &socketArray[syscallPackage.listenPackage.sockfd];
@@ -533,12 +538,19 @@ void tcp_server_init(void) {
 
                 socketArray[socketCounter] = *event_data.pcb;
 
-                add.sin_family = AF_INET;
-                add.sin_port = htons(event_data.pcb->remote_port);
-                memcpy(&add.sin_addr.s_addr, &event_data.pcb->remote_ip.u_addr.ip4.addr, sizeof(struct in_addr));
-
-                acceptResponse.addr = add;
-                acceptResponse.addrlen = sizeof(struct sockaddr_in);
+                if(ip_version == 4){
+                    add4.sin_family = AF_INET;
+                    add4.sin_port = htons(event_data.pcb->remote_port);
+                    memcpy(&add4.sin_addr.s_addr, &event_data.pcb->remote_ip.u_addr.ip4.addr, sizeof(struct in_addr));
+                    acceptResponse.addr = add4;
+                    acceptResponse.addrlen = sizeof(struct sockaddr_in);
+                }else if (ip_version == 6){
+                    add6.sin6_family = AF_INET6;
+                    add6.sin6_port = htons(event_data.pcb->remote_port);
+                    memcpy(&add6.sin6_addr.s6_addr, &event_data.pcb->remote_ip.u_addr.ip6.addr, sizeof(struct in6_addr));
+                    acceptResponse.addr6 = add6;
+                    acceptResponse.addrlen = sizeof(struct sockaddr_in6);
+                }
 
                 syscallResponse.acceptResponse = acceptResponse;
 
