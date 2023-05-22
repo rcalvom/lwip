@@ -6,10 +6,10 @@ project(lwIP)
 
 # Example lwIP application
 set(LWIP_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-add_link_options(-fsanitize=address)
-add_compile_options(-fsanitize=address)
-set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
-set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+add_link_options(-fsanitize=address -lgcov --coverage -fprofile-arcs -ftest-coverage -g)
+add_compile_options(-fsanitize=address -lgcov --coverage -fprofile-arcs -ftest-coverage -g)
+set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address -lgcov --coverage -fprofile-arcs -ftest-coverage -g")
+set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address -lgcov --coverage -fprofile-arcs -ftest-coverage -g")
 set (LWIP_DEFINITIONS LWIP_DEBUG=1)
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")

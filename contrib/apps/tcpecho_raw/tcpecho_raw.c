@@ -376,7 +376,14 @@ static int reset_socket_array(void){
         for (counter = 3; counter < socketCounter; counter++) {
             struct tcp_pcb *pcb = &socketArray[counter];
             LOCK_TCPIP_CORE();
-            tcp_close(pcb);
+                tcp_arg(pcb, NULL);
+                tcp_sent(pcb, NULL);
+                tcp_recv(pcb, NULL);
+                tcp_err(pcb, NULL);
+                tcp_poll(pcb, NULL, 0);
+                //tcp_free(state);
+                tcp_close(pcb);
+            printf("Closing... %d\n", tcp_close(pcb));
             UNLOCK_TCPIP_CORE();
         }
         memset(socketArray, 0, MAX_SOCKET_ARRAY * sizeof(struct tcp_pcb));
@@ -486,12 +493,12 @@ void tcp_server_init(void) {
 
                 LOCK_TCPIP_CORE();
                 // check if endianness conversion is necessary
-                printf("port: %d", lwip_htons(syscallPackage.bindPackage.addr.sin_port));
+                printf("port: %d\n", lwip_htons(syscallPackage.bindPackage.addr.sin_port));
                 err = tcp_bind(pcb, IP_ANY_TYPE, lwip_htons(syscallPackage.bindPackage.addr.sin_port));
                 UNLOCK_TCPIP_CORE();
 
                 if (err != ERR_OK) {
-                    printf("Error in \"socket_bind\" instruction");
+                    printf("Error in \"socket_bind\" instruction... %d", err);
                     syscallResponse.result = -1;
                 }else {
                     syscallResponse.result = 0;

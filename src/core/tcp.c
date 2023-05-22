@@ -729,6 +729,7 @@ tcp_bind(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port)
                 (ip_addr_isany(&cpcb->local_ip) ||
                  ip_addr_isany(ipaddr) ||
                  ip_addr_eq(&cpcb->local_ip, ipaddr))) {
+              printf("Error here!!!");
               return ERR_USE;
             }
           }

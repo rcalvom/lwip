@@ -75,19 +75,19 @@ include $(DEPFILES)
 endif
 
 .depend_test: $(TESTFILES)
-	$(CCDEP) $(CFLAGS) -MM $^ > .depend_test || rm -f .depend_test
+	$(CCDEP) -lgcov --coverage -fprofile-arcs -ftest-coverage -g $(CFLAGS) -MM $^ > .depend_test || rm -f .depend_test
 .depend_lwip: $(LWIPFILES)
-	$(CCDEP) $(CFLAGS) -MM $^ > .depend_lwip || rm -f .depend_lwip
+	$(CCDEP) -lgcov --coverage -fprofile-arcs -ftest-coverage -g $(CFLAGS) -MM $^ > .depend_lwip || rm -f .depend_lwip
 .depend_app: $(APPFILES)
-	$(CCDEP) $(CFLAGS) -MM $^ > .depend_app || rm -f .depend_app
+	$(CCDEP) -lgcov --coverage -fprofile-arcs -ftest-coverage -g $(CFLAGS) -MM $^ > .depend_app || rm -f .depend_app
 
 ifneq ($(UNAME_S),Darwin)
 # clang on Darwin doesn't support --start-group
 lwip_unittests: $(DEPFILES) $(TESTOBJS) $(LWIPLIBCOMMON) $(APPLIB)
-	$(CC) $(CFLAGS) -o lwip_unittests $(TESTOBJS)  -Wl,--start-group $(LWIPLIBCOMMON) $(APPLIB) $(LDFLAGS) -Wl,--end-group
+	$(CC) $(CFLAGS) -o lwip_unittests $(TESTOBJS)  -Wl,--start-group $(LWIPLIBCOMMON) $(APPLIB) $(LDFLAGS) -Wl,--end-group -lgcov --coverage -fprofile-arcs -ftest-coverage -g
 else
 lwip_unittests: $(DEPFILES) $(TESTOBJS) $(LWIPLIBCOMMON) $(APPLIB)
-	$(CC) $(CFLAGS) -o lwip_unittests $(TESTOBJS) $(LWIPLIBCOMMON) $(APPLIB) $(LDFLAGS)
+	$(CC) $(CFLAGS) -o lwip_unittests $(TESTOBJS) $(LWIPLIBCOMMON) $(APPLIB) $(LDFLAGS) -lgcov --coverage -fprofile-arcs -ftest-coverage -g
 endif
 
 check: lwip_unittests

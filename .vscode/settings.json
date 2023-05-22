@@ -18,6 +18,7 @@
         "ratio": "c",
         "sstream": "c",
         "streambuf": "c",
-        "functional": "c"
+        "functional": "c",
+        "limits": "c"
     }
 }

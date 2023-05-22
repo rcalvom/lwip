@@ -51,10 +51,10 @@ depend dep: .depend
 include .depend
 
 .depend: $(CONTRIBDIR)/examples/example_app/test.c default_netif.c $(LWIPFILES) $(APPFILES) $(MAKEFSDATAFILES)
-	$(CCDEP) $(CFLAGS) -MM $^ > .depend || rm -f .depend
+	$(CCDEP) -lgcov --coverage -fprofile-arcs -ftest-coverage -g $(CFLAGS) -MM $^ > .depend || rm -f .depend
 
 example_app: .depend $(LWIPLIBCOMMON) $(APPLIB) default_netif.o test.o
-	$(CC) $(CFLAGS) -o example_app test.o default_netif.o -Wl,--start-group $(APPLIB) $(LWIPLIBCOMMON) -Wl,--end-group $(LDFLAGS)
+	$(CC) $(CFLAGS) -o example_app test.o default_netif.o -Wl,--start-group $(APPLIB) $(LWIPLIBCOMMON) -Wl,--end-group $(LDFLAGS) -lgcov --coverage -fprofile-arcs -ftest-coverage -g
 
 makefsdata: .depend $(MAKEFSDATAOBJS)
-	$(CC) $(CFLAGS) -o makefsdata $(MAKEFSDATAOBJS)
+	$(CC) $(CFLAGS) -o makefsdata $(MAKEFSDATAOBJS) -lgcov --coverage -fprofile-arcs -ftest-coverage -g

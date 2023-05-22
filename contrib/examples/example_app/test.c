@@ -36,6 +36,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <time.h>
+#include <signal.h>
 #include <string.h>
 #include <sanitizer/asan_interface.h>
 
@@ -746,12 +747,26 @@ main_loop(void)
 #endif /* USE_ETHERNET */
 }
 
+
+void handler(int signum)
+{
+    /* notify the operator that the service has receive SIGTERM
+    and clean up (close file descriptors, etc).  */
+
+    exit(0);
+}
+
+
 #if USE_PPP && PPPOS_SUPPORT
 int main(int argc, char **argv)
 #else /* USE_PPP && PPPOS_SUPPORT */
 int main(void)
 #endif /* USE_PPP && PPPOS_SUPPORT */
 {
+
+    signal(SIGTERM, handler);
+    signal(SIGHUP, handler);
+    signal(SIGINT, handler);
 #if USE_PPP && PPPOS_SUPPORT
   if(argc > 1) {
     sio_idx = (u8_t)atoi(argv[1]);
