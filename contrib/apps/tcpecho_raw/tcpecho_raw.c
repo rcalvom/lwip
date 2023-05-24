@@ -516,7 +516,7 @@ int init_syscall(void){
 }
 
 void tcp_server_init(void){
-    void *handle = dlopen("/home/rcalvome/Documents/app/lwip/portability_layer.so", RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
+    void *handle = dlopen(getenv("PORTABILITY_LAYER_PATH"), RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
     if(!handle){
         printf("Error importing portability layer");
     }
