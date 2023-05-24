@@ -88,6 +88,7 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
         if(LWIP_USE_SANITIZERS)
             list(APPEND LWIP_COMPILER_FLAGS_GNU_CLANG
                 -fsanitize=address
+                -ldl
                 -fsanitize=undefined
                 -fno-sanitize=alignment
                 -fstack-protector
@@ -109,6 +110,7 @@ if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
     if(LWIP_USE_SANITIZERS)
         list(APPEND LWIP_COMPILER_FLAGS_GNU_CLANG
             -fsanitize=address
+            -ldl
             -fsanitize=undefined
             -fno-sanitize=alignment
         )

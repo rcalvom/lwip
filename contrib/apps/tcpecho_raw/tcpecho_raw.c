@@ -52,99 +52,11 @@
 #include "lwip/tcp.h"
 #include "tcpecho_raw.h"
 #include "lwip/sys.h"
+#include "portability_layer.h"
 
+#include <dlfcn.h>
 
 #define TCP_PORT 8080
-
-struct SocketPackage {
-    int domain;
-    int type;
-    int protocol;
-};
-
-struct AcceptPackage {
-    int sockfd;
-};
-
-struct BindPackage {
-    int sockfd;
-    union {
-        struct sockaddr_in addr;
-        struct sockaddr_in6 addr6;
-    };
-    socklen_t addrlen;
-};
-
-struct ListenPackage {
-    int sockfd;
-    int backlog;
-};
-
-struct WritePackage {
-    int sockfd;
-    size_t count;
-};
-
-struct SendToPackage {
-    int sockfd;
-    int flags;
-    union {
-        struct sockaddr_in addr;
-        struct sockaddr_in6 addr6;
-    };
-    socklen_t addrlen;
-};
-
-struct ReadPackage {
-    int sockfd;
-    size_t count;
-};
-
-struct RecvFromPackage {
-    int sockfd;
-    size_t count;
-    int flags;
-};
-
-struct ClosePackage {
-    int sockfd;
-};
-
-struct AcceptResponsePackage {
-    union {
-        struct sockaddr_in addr;
-        struct sockaddr_in6 addr6;
-    };
-
-    socklen_t addrlen;
-};
-
-struct SyscallResponsePackage {
-    int result;
-    union {
-        struct AcceptResponsePackage acceptResponse;
-    };
-};
-
-
-struct SyscallPackage {
-    char syscallId[20];
-    int bufferedMessage;
-    size_t bufferedCount;
-    void *buffer;
-    union {
-        struct SocketPackage socketPackage;
-        struct BindPackage bindPackage;
-        struct ListenPackage listenPackage;
-        struct AcceptPackage acceptPackage;
-        struct BindPackage connectPackage;
-        struct WritePackage writePackage;
-        struct SendToPackage sendToPackage;
-        struct ClosePackage closePackage;
-        struct ReadPackage readPackage;
-        struct RecvFromPackage recvFromPackage;
-    };
-};
 
 struct EventCallbackData {
     void *arg;
@@ -154,11 +66,10 @@ struct EventCallbackData {
 };
 
 
-
 static struct SyscallResponsePackage syscallResponse;
 static struct EventCallbackData event_data;
-
 static sys_sem_t event_sem;
+int ip_version;
 
 #define MAX_SOCKET_ARRAY 10
 
@@ -386,10 +297,249 @@ static int reset_socket_array(void){
     return sizeSocketArray;
 }
 
+int socket_syscall(int domain){
+    printf("Socket create in LwIP\n");
+
+    struct tcp_pcb *pcb;
+    struct SocketPackage p;
+
+    LOCK_TCPIP_CORE();
+    pcb = tcp_new_ip_type(IPADDR_TYPE_ANY);
+    UNLOCK_TCPIP_CORE();
+
+    ip_version = domain == AF_INET ? 4 : 6;
+
+    if (pcb == NULL) {
+        printf("Error in \"socket_create\" instruction");
+        return -1;
+    } else {
+        socketArray[socketCounter] = *pcb;
+        return socketCounter++;
+    }
+}
+
+int bind_syscall(int index, unsigned short int port){
+    printf("Socket bind in LwIP\n");
+
+    struct tcp_pcb *pcb;
+    err_t err;
+
+    pcb = &socketArray[index];
+
+    LOCK_TCPIP_CORE();
+    err = tcp_bind(pcb, IP_ANY_TYPE, lwip_htons(port));
+    UNLOCK_TCPIP_CORE();
+
+    if (err != ERR_OK) {
+        printf("Error in \"socket_bind\" instruction");
+        return -1;
+    } else {
+        return 0;
+    }
+}
+
+int listen_syscall(int index){
+    printf("Socket listen in LwIP\n");
+
+    struct tcp_pcb *pcb;
+    err_t err;
+
+    pcb = &socketArray[index];
+
+    LOCK_TCPIP_CORE();
+    pcb = tcp_listen_with_backlog_and_err(pcb, 0, &err);
+    UNLOCK_TCPIP_CORE();
+
+    LOCK_TCPIP_CORE();
+    tcp_accept(pcb, tcp_accept_callback);
+    UNLOCK_TCPIP_CORE();
+
+    if(err != ERR_OK){
+        printf("Error in \"socket_listen\" instruction");
+        return -1;
+    } else {
+        return 0;
+    }
+
+}
+
+struct SyscallResponsePackage accept_syscall(int index){
+    printf("Socket accept in LwIP\n");
+
+    struct tcp_pcb *pcb;
+    struct AcceptResponsePackage acceptResponse;
+    struct sockaddr_in add4;
+    struct sockaddr_in6 add6;
+
+    pcb = &socketArray[index];
+
+    printf("About to yield in accept ... \n");
+    sys_sem_wait(&event_sem);
+    printf("Waking up from yield in accept ... \n");
+
+    if(event_data.pcb == NULL){
+        printf("Error in \"socket_accept\" instruction");
+    }
+
+    socketArray[socketCounter] = *event_data.pcb;
+
+    if(ip_version == 4){
+        add4.sin_family = AF_INET;
+        add4.sin_port = htons(event_data.pcb->remote_port);
+        memcpy(&add4.sin_addr.s_addr, &event_data.pcb->remote_ip.u_addr.ip4.addr, sizeof(struct in_addr));
+        acceptResponse.addr = add4;
+        acceptResponse.addrlen = sizeof(struct sockaddr_in);
+    }else if (ip_version == 6){
+        add6.sin6_family = AF_INET6;
+        add6.sin6_port = htons(event_data.pcb->remote_port);
+        memcpy(&add6.sin6_addr.s6_addr, &event_data.pcb->remote_ip.u_addr.ip6.addr, sizeof(struct in6_addr));
+        acceptResponse.addr6 = add6;
+        acceptResponse.addrlen = sizeof(struct sockaddr_in6);
+    }
+
+    syscallResponse.acceptResponse = acceptResponse;
+
+    if(event_data.err != ERR_OK){
+        printf("Error in \"socket_accept\" instruction: Exit");
+        syscallResponse.result = -1;
+    }else{
+        syscallResponse.result = socketCounter++;
+    }
+    event_data.pcb = NULL;
+    return syscallResponse;
+}
+
+int connect_syscall(int index, struct ip_addr address, unsigned short int port){
+    struct tcp_pcb *pcb;
+    struct ip_addr dest_ipaddr;
+
+    pcb = &socketArray[index];
+
+    memcpy(&dest_ipaddr.u_addr.ip4.addr, &address, sizeof(struct ip_addr));
+
+    LOCK_TCPIP_CORE();
+    tcp_connect(pcb, &dest_ipaddr, htons(port), tcp_connect_callback);
+    UNLOCK_TCPIP_CORE();
+
+    printf("About to yield in connect ... \n");
+    sys_sem_wait(&event_sem);
+    printf("Waking up from yield in connect ... \n");
+
+    if(event_data.pcb == NULL){
+        printf("Error in \"socket_connect\" instruction");
+    }
+    event_data.pcb = NULL;
+    if(event_data.err != ERR_OK){
+        printf("Error in \"socket_connect\" instruction");
+        return -1;
+    } else {
+        return 0;
+    }
+
+}
+
+int write_syscall(int index, void *buffer, unsigned long size){
+    printf("Socket write in LwIP\n");
+    struct tcp_pcb *pcb;
+    struct tcp_raw_state *state;
+
+    state = (struct tcp_raw_state *) mem_malloc(sizeof(struct tcp_raw_state));
+
+    pcb = &socketArray[index];
+
+    state->state = ES_ACCEPTED;
+    state->p = pbuf_alloc(PBUF_RAW, size, PBUF_POOL); /*@todo: pbuf.c line 251, could not allocate 50k, segmentation fault*/
+    if(state->p == NULL){
+        printf("Error allocating memory.\n");
+        return -1;
+    } else {
+        state->p->payload = buffer;
+
+        LOCK_TCPIP_CORE();
+        tcp_raw_send(pcb, state);
+        UNLOCK_TCPIP_CORE();
+
+        printf("About to yield in write ... \n");
+        sys_sem_wait(&event_sem);
+        printf("Waking up from yield in write ... \n");
+
+        event_data.pcb = NULL;
+        event_data.len = 0;
+
+        if(event_data.err != ERR_OK){
+            printf("Error in \"socket_write\" instruction");
+            return -1;
+        }else{
+            return event_data.len;
+        }
+    }
+}
+
+int read_syscall(int index){
+    struct tcp_pcb *pcb;
+    pcb = &socketArray[index];
+    LWIP_UNUSED_ARG(pcb);
+
+    printf("About to yield in read ... \n");
+    sys_sem_wait(&event_sem);
+    printf("Waking up from yield in read ... \n");
+    event_data.pcb = NULL;
+
+    if(event_data.err != ERR_OK){
+        printf("Error in \"socket_read\" instruction");
+        return -1;
+    }else{
+        return event_data.len;
+    }
+}
+
+int close_syscall(int index){
+    struct tcp_pcb *pcb;
+    err_t err;
+
+    pcb = &socketArray[index];
+
+    LOCK_TCPIP_CORE();
+    err = tcp_close(pcb);
+    UNLOCK_TCPIP_CORE();
+
+    if(err != ERR_OK){
+        printf("Error in \"socket_close\" instruction");
+        return -1;
+    }else{
+        return 0;
+    }
+}
+
+int init_syscall(void){
+    return reset_socket_array();
+}
+
+void tcp_server_init(void){
+    void *handle = dlopen("/home/rcalvome/Documents/app/lwip/portability_layer.so", RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
+    if(!handle){
+        printf("Error importing portability layer");
+    }
+    packetdrill_run_syscalls_fn run_syscalls = dlsym(handle, "run_syscalls");
+    struct packetdrill_syscalls args;
+    sys_sem_new(&event_sem, 0);
+    args.socket_syscall = socket_syscall;
+    args.bind_syscall = bind_syscall;
+    args.listen_syscall = listen_syscall;
+    args.accept_syscall = accept_syscall;
+    args.connect_syscall = connect_syscall;
+    args.write_syscall = write_syscall;
+    args.read_syscall = read_syscall;
+    args.close_syscall = close_syscall;
+    args.init_syscall = init_syscall;
+    run_syscalls(&args);
+}
+
+
 /**
  * Function to initialize tcp server
  */
-void tcp_server_init(void) {
+void tcp_server_init2(void) {
     struct sockaddr_un addr;
     struct SyscallPackage syscallPackage;
     int sfd, cfd;

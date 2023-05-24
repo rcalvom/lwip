@@ -34,7 +34,7 @@
 #CC=/home/ricardo/Documents/Purdue/app/AFLplusplus/afl-clang-fast
 CCDEP?=$(CC)
 
-CFLAGS+=-g -DLWIP_DEBUG -Wall -pedantic \ #-Werror
+CFLAGS+=-g -ldl -DLWIP_DEBUG -Wall -pedantic \ #-Werror
 	-Wparentheses -Wsequence-point -Wswitch-default \
 	-Wextra -Wundef -Wshadow -Wpointer-arith -Wcast-qual \
 	-Wc++-compat -Wwrite-strings -Wold-style-definition -Wcast-align \
@@ -50,7 +50,7 @@ CFLAGS+= -Wlogical-op -Wc90-c99-compat -Wtrampolines
 #CFLAGS:=$(CFLAGS) -fsanitize=address -fstack-protector -fstack-check -fsanitize=undefined -fno-sanitize=alignment
 else
 # we cannot sanitize alignment on x86-64 targets because clang wants 64 bit alignment
-CFLAGS+= -fsanitize=address -fsanitize=undefined -fno-sanitize=alignment -Wdocumentation -Wno-documentation-deprecated-sync -ldbus-1 -lPcap++ -lPacket++ -lCommon++ -lpcap
+CFLAGS+= -ldl -fsanitize=address -fsanitize=undefined -fno-sanitize=alignment -Wdocumentation -Wno-documentation-deprecated-sync -ldbus-1 -lPcap++ -lPacket++ -lCommon++ -lpcap
 endif
 
 CONTRIBDIR?=../../..
@@ -60,7 +60,7 @@ ARFLAGS?=rs
 #default assumes it's a dir above the contrib module
 LWIPDIR?=$(CONTRIBDIR)/..
 
-CFLAGS+=-I. -ldbus-1 -lPcap++ -lPacket++ -lCommon++ -lpcap\
+CFLAGS+=-I. -ldbus-1 -ldl -lPcap++ -lPacket++ -lCommon++ -lpcap\
 	-I$(CONTRIBDIR) \
 	-I$(LWIPDIR)/include \
 	-I$(LWIPARCH)/include
