@@ -19,5 +19,6 @@
         "sstream": "c",
         "streambuf": "c",
         "functional": "c"
-    }
+    },
+    "cmake.configureOnOpen": false
 }
