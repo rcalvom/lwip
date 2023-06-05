@@ -163,6 +163,7 @@ static err_t tcp_raw_poll(void *arg, struct tcp_pcb *tpcb) {
 }
 
 static err_t tcp_connect_callback(void *arg, struct tcp_pcb *pcb, err_t err){
+    printf("CONNECT!\n");
     event_data.arg = arg;
     event_data.pcb = pcb;
     event_data.err = err;
@@ -404,7 +405,7 @@ int connect_syscall(int index, struct in_addr address, unsigned short int port){
 
     pcb = &socketArray[index];
 
-    memcpy(&dest_ipaddr.u_addr.ip4.addr, &address, sizeof(struct ip_addr));
+    memcpy(&dest_ipaddr.u_addr.ip4.addr, &address, sizeof(struct in_addr));
 
     LOCK_TCPIP_CORE();
     tcp_connect(pcb, &dest_ipaddr, htons(port), tcp_connect_callback);

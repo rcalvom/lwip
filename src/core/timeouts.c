@@ -102,12 +102,12 @@ const struct lwip_cyclic_timer lwip_cyclic_timers[] = {
   {DNS_TMR_INTERVAL, HANDLER(dns_tmr)},
 #endif /* LWIP_DNS */
 #if LWIP_IPV6
-  {ND6_TMR_INTERVAL, HANDLER(nd6_tmr)},
+  {1, HANDLER(nd6_tmr)},
 #if LWIP_IPV6_REASS
-  {IP6_REASS_TMR_INTERVAL, HANDLER(ip6_reass_tmr)},
+  {1, HANDLER(ip6_reass_tmr)},
 #endif /* LWIP_IPV6_REASS */
 #if LWIP_IPV6_MLD
-  {MLD6_TMR_INTERVAL, HANDLER(mld6_tmr)},
+  {1, HANDLER(mld6_tmr)},
 #endif /* LWIP_IPV6_MLD */
 #if LWIP_IPV6_DHCP6
   {DHCP6_TIMER_MSECS, HANDLER(dhcp6_tmr)},
